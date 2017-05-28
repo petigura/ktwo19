@@ -1,8 +1,4 @@
-"""
-Example:
-
-
-"""
+#!/usr/bin/env python 
 
 import os
 from sys import platform
@@ -17,7 +13,7 @@ fig.set_tight_layout(True)
 
 def main():
     psr = ArgumentParser(description='')
-    psr.add_argument('method')
+    psr.add_argument('method', help='input parameters')
     psr.add_argument('id')
     psr.add_argument('--livepoints', default=1000, type=int)
     psr.add_argument('--ins', default=False, action='store_true')
@@ -30,14 +26,17 @@ def main():
     print "mnest output files: {}".format(dirname) 
     if not os.path.exists(dirname): 
        os.makedirs(dirname)
-        
-    if args.method=="ttvfast-mass-prior":
-        import ktwo19.mnest.mnest_ttvfast_mass_prior as mod
-    if args.method=="ttvfast-npar9":
-        import ktwo19.mnest.ttvfast_npar9 as mod
-    else:
-        assert False, "method not supported"
 
+    methods = ['ttvfast-mass-prior','ttvfast-npar9']
+    if args.method=="ttvfast-mass-prior":
+        import ktwo19.mnest.ttvfast_mass_prior as mod
+    elif args.method=="ttvfast-npar9":
+        import ktwo19.mnest.ttvfast_npar9 as mod
+    elif args.method=="ttvfast-npar9-secosw":
+        import ktwo19.mnest.ttvfast_npar9_secosw as mod
+    else:
+        s = "method not supported, must be one of {}".format(", ".join(methods))
+        assert False, s
 
     ktwo19.mnest.mnest.run_mcmc(
         mod.loglikecube, mod.priorcube, mod.nparams, mod.parameters, 
