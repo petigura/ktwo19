@@ -9,6 +9,8 @@ import cPickle as pickle
 import pymultinest
 import re
 import ttv.lithwick
+from cStringIO import StringIO as sio
+
 
 def load_times():
     # First load K2 times
@@ -63,12 +65,24 @@ def load_ephem(method='linear'):
 
 def load_samples(method):
     if method=='ttvfast-npar9':
-        outputfiles_basename=u'analysis/mnest-chains/ttvfast-npar9/1-'
+        outputfiles_basename=u'analysis/mnest-chains/ttvfast-npar9_lp=300/1-'
         an = pymultinest.analyse.Analyzer(
             8, outputfiles_basename=outputfiles_basename
         )
         cols= ['per1', 'ecosw1', 'esinw1', 'tc1', 'mr2', 'per2', 'ecosw2',
        'esinw2', 'tc2']
+        samples = pd.DataFrame(
+            an.get_equal_weighted_posterior()[:,:-1],columns=cols
+        )
+        samples = samples.rename(columns={'T1':'tc1','T2':'tc2'})
+
+    if method=='ttvfast-npar9-secosw':
+        outputfiles_basename=u'analysis/mnest-chains/ttvfast-npar9-secosw/1-'
+        an = pymultinest.analyse.Analyzer(
+            8, outputfiles_basename=outputfiles_basename
+        )
+        cols= ['per1', 'secosw1', 'sesinw1', 'tc1', 'mr2', 'per2', 'secosw2',
+       'sesinw2', 'tc2']
         samples = pd.DataFrame(
             an.get_equal_weighted_posterior()[:,:-1],columns=cols
         )
@@ -109,3 +123,44 @@ def model_from_samples(method, i_planet, nsamp=100):
     tc = np.vstack(tc)
     i_epoch = i_epoch[:minlen]
     return i_epoch, tc
+
+def load_djh():
+    s = """\
+    tc               tc_err
+    2457898.54880    0.00459 
+    2457906.46919    0.00569 
+    2457914.39057    0.00674 
+    2457922.31341    0.00776 
+    2457930.23357    0.00881 
+    2457938.15467    0.00981 
+    2457946.07734    0.01071 
+    2457953.99728    0.01167 
+    2457961.91812    0.01261 
+    """
+    s = pd.read_table(sio(s),sep='\s*')
+    s['tc'] -=bjd0
+    s['i_epoch'] = s.index
+    s['i_epoch'] += 137
+    s['i_planet'] = 1
+    times_djh = s.copy()
+
+
+    s = """\
+    tc               tc_err
+    2457900.04646    0.02629 
+    2457911.94202    0.03194 
+    2457923.83491    0.03837 
+    2457935.73184    0.04370 
+    2457947.62592    0.04959 
+    2457959.52420    0.05443 
+    2457971.41940    0.05959 
+    """
+    s = pd.read_table(sio(s),sep='\s*')
+    s['tc'] -=bjd0
+    s['i_epoch'] = s.index
+    s['i_epoch'] += 91
+    s['i_planet'] = 2
+
+    times_djh = times_djh.append(s)
+    times_djh.index = times_djh.i_planet
+    return times_djh
