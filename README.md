@@ -1,3 +1,19 @@
+# K2-19 TTV+RV project
+
+## Data
+
+Hand entered data lives in
+
+```
+data/data.xlsx
+```
+
+where the sheets correspond to
+
+- transit-times: list of transit times 
+- ephem-sinukoff16: Ephemeris given in Sinukoff et al. (2016).  
+- stellar-sme: stellar parameters from Brewer et al. (2016)
+
 ## Derive stellar parameters
 
 0_Stellar-Parameters.ipynb
