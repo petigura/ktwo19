@@ -105,7 +105,6 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df2 = load_table('rv')
         df = pd.merge(df,df2['obnm tel sval time'.split()])
         df = df['tel obnm time mnvel errvel sval'.split()]
-        
 
     elif table=='stellar':
         fn = os.path.join(DATADIR, 'data.xlsx')
