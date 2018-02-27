@@ -45,6 +45,16 @@ def photdyn_prepare(args):
     df.to_csv(fn,sep='\t',index=None)
     print "created {}".format(fn)
 
+    df = ktwo19.io.load_table('rv',cache=2)
+    fn = 'analysis/photodyn/rv.tsv'
+    df.to_csv(fn,sep='\t',index=None)
+    print "created {}".format(fn)
+
+    df = ktwo19.io.load_table('rv-trend-removed',cache=2)
+    fn = 'analysis/photodyn/rv-trend-removed.tsv'
+    df.to_csv(fn,sep='\t',index=None)
+    print "created {}".format(fn)
+
 def create_table(args):
     w = Workflow()
     w.create_file('table', args.name ) 

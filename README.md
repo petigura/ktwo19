@@ -2,8 +2,7 @@
 
 0_Stellar-Parameters.ipynb
 
-
-
+cp ~/.cpsutils/mir3/vel/vstepic201505350.dat data/
 
 # Run MCMC  
 

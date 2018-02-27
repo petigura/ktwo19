@@ -9,13 +9,13 @@ import radvel.driver
 import radvel.utils
 from astropy import constants as c
 
-import ktwo24.io
+import ktwo19.io
 import cpsutils.io
 
 def val_stat(return_dict=False):
     d = OrderedDict()
     # load up data from p16
-    p16 = ktwo24.io.load_table('petigura16')
+    p16 = ktwo19.io.load_table('petigura16')
     d['p16-ror1'] = p16.ix['pl_ror',1]
     d['p16-ror1_err'] = p16.ix['pl_ror_err',1]
     d['p16-ror2'] = p16.ix['pl_ror',2]
@@ -28,7 +28,7 @@ def val_stat(return_dict=False):
     d['rv-errvel-min'] = "{:.1f}".format(vst.errvel.min())
     d['rv-errvel-max'] = "{:.1f}".format(vst.errvel.max())
 
-    ephem = ktwo24.io.load_table('ephem-lithwick')
+    ephem = ktwo19.io.load_table('ephem-lithwick')
     d['ref-ephem-per-1'] = ephem.ix[1,'per']
     d['ref-ephem-tc-1'] = ephem.ix[1,'T']
     d['ref-ephem-per-2'] = ephem.ix[2,'per']
@@ -63,7 +63,7 @@ def val_stat(return_dict=False):
 
 def val_fit():
     d = OrderedDict()
-    chain =  ktwo24.io.load_table('ktwo24_npl=3-ccc',cache=1)
+    chain =  ktwo19.io.load_table('ktwo19_npl=3-ccc',cache=1)
 
     fmt = OrderedDict()
     fmt['per1'] = "{:.5f}"
@@ -94,7 +94,7 @@ def val_fit():
     chain['musini2'] *= 1e6
     chain['musini3'] *= 1e6
 
-    star = ktwo24.io.load_table('stellar')
+    star = ktwo19.io.load_table('stellar')
     smass = np.random.normal(
         loc=star.smass, scale=star.smass_err, size=len(chain)
     )
@@ -105,7 +105,7 @@ def val_fit():
     insert_chain_dict(chain, d, fmt, pre='ccc-') 
 
     ## Eccentric model
-    chain =  ktwo24.io.load_table('ktwo24_npl=3-eec',cache=1)
+    chain =  ktwo19.io.load_table('ktwo19_npl=3-eec',cache=1)
     pre = 'eec-'
     chain['e1'] = chain.eval('secosw1**2 + sesinw1**2')
     chain['e2'] = chain.eval('secosw2**2 + sesinw2**2')
@@ -122,7 +122,7 @@ def val_lithwick():
     """
     Print values associated with the Lithwick fits
     """
-    chain = ktwo24.io.load_table('lithwick-emcee-samples',cache=1)
+    chain = ktwo19.io.load_table('lithwick-emcee-samples',cache=1)
     chain['muppm1'] = chain.mu1 * 1e6
     chain['muppm2'] = chain.mu2 * 1e6
     chain['zmag']= chain.eval('sqrt( rezfree**2 + imzfree**2)') 
@@ -150,7 +150,7 @@ def val_lithwick():
 
 def val_ttvfast():
     d = OrderedDict()
-    samp = ktwo24.io.load_table('ttvfast-emcee-samples-derived',cache=1)
+    samp = ktwo19.io.load_table('ttvfast-emcee-samples-derived',cache=1)
 
     fmt = OrderedDict()
     fmt['muppm1'] = "{:.1f}"
@@ -182,7 +182,7 @@ def val_ttvfast():
 
     # envelope fraction
     fmt = OrderedDict()
-    samp = ktwo24.io.load_table('fenv-samples',cache=1)
+    samp = ktwo19.io.load_table('fenv-samples',cache=1)
     fmt['fenv1'] = "{:.0f}"
     fmt['fenv2'] = "{:.0f}"
     fmt['mcore1'] = "{:.1f}"
@@ -223,13 +223,13 @@ def print_table(method):
     if method=="lithwick2-muprior":
         table(mod, samples, fmtd)
     elif method=="lithwick2":
-        samples = ktwo24.io.load_samples('lithwick2')
+        samples = ktwo19.io.load_samples('lithwick2')
         samples['muppm1'] = samples.mu1 * 1e6
         samples['muppm2'] = samples.mu2 * 1e6
         samples['zmag']= samples.eval('sqrt( rezfree**2 + imzfree**2)') 
         samples['mr2']= samples.eval('mu2 / mu1') 
 
-        import ktwo24.mnest.mnest_lithwick2  as mod
+        import ktwo19.mnest.mnest_lithwick2  as mod
         fmtd = OrderedDict()
         fmtd['per1'] = 5
         fmtd['tc1'] = 4
@@ -243,14 +243,14 @@ def print_table(method):
         fmtd['mr2'] = 2
         table(mod, samples, fmtd)
     elif method=='ttvfast-npar=11':
-        samples = ktwo24.io.load_samples(method)
+        samples = ktwo19.io.load_samples(method)
         samples['mass2'] = samples['mr2'] * samples['mass1'] 
         samples['masse1'] = samples['mass1'] / M_earth
         samples['masse2'] = samples['mass2'] / M_earth
         samples['e1'] = samples.eval('sqrt(ecosw1**2 + esinw1**2)')
         samples['e2'] = samples.eval('sqrt(ecosw2**2 + esinw2**2)')
 
-        import ktwo24.mnest.ttvfast_npar9  as mod
+        import ktwo19.mnest.ttvfast_npar9  as mod
         fmtd = OrderedDict()
         fmtd['mass1'] = 5
         fmtd['per1'] = 5
