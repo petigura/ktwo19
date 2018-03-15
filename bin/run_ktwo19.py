@@ -9,7 +9,7 @@ from collections import OrderedDict
 
 import ktwo19.io
 #import ktwo19.tables
-#import ktwo19.values
+import ktwo19.values
 #import ktwo19.plotting._corner
 #import ktwo19.plotting.omc
 
@@ -75,28 +75,21 @@ class Workflow(object):
     def __init__(self):
         # plots
         d = OrderedDict()
-        d['dumbbell'] = ktwo24.plotting.dumbbell.fig_dumbbell
-        d['lithwick-corner4'] = ktwo24.plotting._corner.fig_lithwick4
-        d['ttvfast-corner6'] = ktwo24.plotting._corner.fig_ttvfast6
-        d['lithwick-samples'] = ktwo24.plotting.omc.fig_lithwick_samples
-        d['ttvfast-samples'] = ktwo24.plotting.omc.fig_ttvfast_samples
         self.plot_dict = d
 
         d = OrderedDict()
-        d['rv'] = ktwo24.tables.tab_rv
-        d['rv-stub'] = lambda : ktwo24.tables.tab_rv()[:10]
-        d['transit-times-predict'] = ktwo24.tables.tab_transit_times_predict
-        d['transit-times-predict-stub1'] = \
-                lambda : ktwo24.tables.tab_transit_times_predict()[:5]
-        d['transit-times-predict-stub2'] = \
-                lambda : ktwo24.tables.tab_transit_times_predict()[-5:]
+        #d['rv'] = ktwo24.tables.tab_rv
+        #d['rv-stub'] = lambda : ktwo24.tables.tab_rv()[:10]
+        #d['transit-times-predict'] = ktwo24.tables.tab_transit_times_predict
+        #d['transit-times-predict-stub1'] = \
+        #        lambda : ktwo24.tables.tab_transit_times_predict()[:5]
+        #d['transit-times-predict-stub2'] = \
+        #        lambda : ktwo24.tables.tab_transit_times_predict()[-5:]
         self.table_dict = d
 
         d = OrderedDict()
-        d['stat'] = ktwo24.values.val_stat
-        d['fit'] = ktwo24.values.val_fit
-        d['lithwick'] = ktwo24.values.val_lithwick
-        d['ttvfast'] = ktwo24.values.val_ttvfast
+        d['stat'] = ktwo19.values.val_stat
+        d['fit'] = ktwo19.values.val_fit
         self.val_dict = d
 
         d = OrderedDict()

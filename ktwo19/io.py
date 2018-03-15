@@ -111,6 +111,8 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df = pd.read_excel(
             fn,'stellar-sme',squeeze=True,header=None,index_col=0,usecols=[0,1]
         )
+    else:
+        assert False, "Table {} not valid table name".format(table)
 
     return df
 
