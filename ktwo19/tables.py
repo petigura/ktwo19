@@ -1,7 +1,60 @@
 import numpy as np
-from ktwo24.config import M_earth
-import ktwo24.io
 from collections import OrderedDict
+
+from scipy import optimize
+from astropy.time import Time
+import pandas as pd
+import ktwo19.io
+
+def tab_rv():
+    df = ktwo24.io.load_table('rv')
+    lines = []
+    for i, row in df.iterrows():
+        line = r""
+        line+=r"{time:.6f} & {mnvel:.2f} & {errvel:.2f} & {sval:.3f} \\"
+        line = line.format(**row)
+        lines.append(line)
+    return lines
+
+def tab_times():
+    df = ktwo19.io.load_table('times',cache=2)
+
+    lines = []
+    for i, row in df.iterrows():
+        line = r""
+        line+=r"{inst:s} & "
+        line+=r"{i_planet:d} & "
+        line+=r"{i_epoch:d} & "
+        line+=r"{tc:.4f} & " 
+        line+=r"{tc_err:.4f} & "
+        line+=r"{ref_key:s} \\"
+        line = line.format(**row)
+        lines.append(line)
+
+    return lines
+
+def tab_transit_times_predict():
+    df = ktwo24.io.load_table('times-predict',cache=2)
+    df = df.reset_index(drop=True)
+    df['s_planet'] = df.i_planet.astype(str).str.replace('1','b').\
+                     str.replace('2','c')
+    iso = Time(df.tc+bjd0,format='jd').iso
+    df['date'] = pd.Series(iso).str.slice(stop=10)
+    date = pd.to_datetime(iso,infer_datetime_format=True)
+    df['tc_err'] = 0.5 * (df.tc_err1 - df.tc_err2)
+    df = df[date.year <= 2025]
+    lines = []
+    for i, row in df.iterrows():
+        line = r""
+#        line+=r"{s_planet:s} & {i_epoch:.0f} & {date:s} & ${{{tc:.4f}}}^{{+{tc_err1:.4f}}}_{{{tc_err2:.4f}}}$ \\"
+        line+=r"{s_planet:s} & {i_epoch:.0f} & {date:s} & {tc:.4f} & {tc_err:.4f} \\"
+        line = line.format(**row)
+        lines.append(line)
+    return lines
+
+
+
+
 def table(mod, samples, format_dict):
     """
     Print quantiles from MCMC fitting.
@@ -34,7 +87,6 @@ def samples_to_values(samples, col, prec):
     )
     print r"{{{:s}}}{{ {:s} }}%".format(col, valstr)
     
-
 def print_table(method):
     if method=="lithwick2-muprior":
         samples = ktwo24.io.load_samples('lithwick2-muprior')

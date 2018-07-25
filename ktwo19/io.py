@@ -81,7 +81,6 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
                 print 'excluding obs: ' + i
         df = df['tel obnm time mnvel errvel sval'.split()]
 
-
     elif table=='rv-trend-removed':
         P, post = radvel.utils.initialize_posterior('analysis/radvel/ktwo19_npl=2-cc.py')
         res  = optimize.minimize(post.neglogprob_array, post.get_vary_params(), method='Nelder-Mead',) # MAP fit
@@ -111,8 +110,17 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df = pd.read_excel(
             fn,'stellar-sme',squeeze=True,header=None,index_col=0,usecols=[0,1]
         )
+
+    elif table=='times':
+        fn = os.path.join(DATADIR, 'data.xlsx')
+        df = pd.read_excel(fn,'transit-times')
+        df = df[df.include==1]
+        df['tc'] -= 2454833
+    
     else:
         assert False, "Table {} not valid table name".format(table)
+
+
 
     return df
 
