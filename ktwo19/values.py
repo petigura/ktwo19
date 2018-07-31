@@ -14,20 +14,16 @@ import cpsutils.io
 
 def val_stat(return_dict=False):
     d = OrderedDict()
-    # load up data from p16
-    #p16 = ktwo19.io.load_table('petigura16')
-    #d['p16-ror1'] = p16.ix['pl_ror',1]
-    #d['p16-ror1_err'] = p16.ix['pl_ror_err',1]
-    #d['p16-ror2'] = p16.ix['pl_ror',2]
-    #d['p16-ror2_err'] = p16.ix['pl_ror_err',2]
-
-    fn = 'data/rv/vstepic201505350.dat'
-    vst, meta = cpsutils.io.read_vst(fn,full_output=True, verbose=0)
+    vst = ktwo19.io.load_table('rv')
     d['rv-n'] = len(vst)
     d['rv-start'] = vst.iloc[0]['day']
     d['rv-stop'] = vst.iloc[-1]['day']
     d['rv-errvel-min'] = "{:.1f}".format(vst.errvel.min())
     d['rv-errvel-max'] = "{:.1f}".format(vst.errvel.max())
+    d['rv-errvel-med'] = "{:.1f}".format(vst.errvel.median())
+    d['rv-snr-min'] = "{:.0f}".format(np.sqrt(vst.cts.min()))
+    d['rv-snr-max'] = "{:.0f}".format(np.sqrt(vst.cts.max()))
+    d['rv-snr-med'] = "{:.0f}".format(np.sqrt(vst.cts.median()))
 
     lines = []
     for k, v in d.iteritems():
@@ -39,33 +35,56 @@ def val_stat(return_dict=False):
 
     return lines
 
-def val_fit():
+def val_sys():
     d = OrderedDict()
-    chain =  ktwo19.io.load_table('ktwo19_npl=3-ccc',cache=1)
+    df = ktwo19.io.load_table('stellar',cache=1)
+    for k in df.index:
+        d[k] = df[k]
+    d['steff'] = "{:.0f}".format(df.ix['steff'])
+    d['steff_err'] = "{:.0f}".format(df.ix['steff_err'])
+
+    df = ktwo19.io.load_table('phot-gp',cache=1)
+    d['phot-gp-eta1'] = "{:.2f}".format(df.ix['eta1'] * 1e2)
+    d['phot-gp-eta1_err'] = "{:.2f}".format(df.ix['eta1_err'] * 1e2)
+    d['phot-gp-eta2'] = "{:.0f}".format(df.ix['eta2'])
+    d['phot-gp-eta2_err'] = "{:.0f}".format(df.ix['eta2_err'])
+    d['phot-gp-eta3'] = "{:.0f}".format(df.ix['eta3'])
+    d['phot-gp-eta3_err'] = "{:.0f}".format(df.ix['eta3_err'])
+    d['phot-gp-eta4'] = "{:.2f}".format(df.ix['eta4'])
+    d['phot-gp-eta4_err'] = "{:.2f}".format(df.ix['eta4_err'])
 
     fmt = OrderedDict()
-    fmt['per1'] = "{:.5f}"
-    fmt['per2'] = "{:.5f}"
-    fmt['per3'] = "{:.0f}"
-    fmt['tc1'] = "{:.2f}"
-    fmt['tc2'] = "{:.2f}"
-    fmt['tc3'] = "{:.0f}"
+    post = ktwo19.keplerian.posterior()
+    d['rv-per1'] = "{:.5f}".format(post.params['per1'].value)
+    d['rv-per2'] = "{:.5f}".format(post.params['per2'].value)
+    d['rv-per3'] = "{:.5f}".format(post.params['per3'].value)
+    d['rv-tc1'] = "{:.3f}".format(post.params['tc1'].value)
+    d['rv-tc2'] = "{:.3f}".format(post.params['tc2'].value)
+    d['rv-tc3'] = "{:.3f}".format(post.params['tc3'].value)
+
+    chain = ktwo19.io.load_table('keplerian-samples-derived',cache=2)
+
     fmt['k1'] = "{:.1f}"
     fmt['k2'] = "{:.1f}"
     fmt['k3'] = "{:.1f}"
-    fmt['a1'] = "{:.3f}"
-    fmt['a2'] = "{:.3f}"
-    fmt['a3'] = "{:.2f}"
-    fmt['mpsini1'] = "{:.1f}"
-    fmt['mpsini2'] = "{:.1f}"
+    fmt['mpsini1'] = "{:.0f}"
+    fmt['mpsini2'] = "{:.0f}"
     fmt['mpsini3'] = "{:.0f}"
-    fmt['musini1'] = "{:.1f}"
-    fmt['musini2'] = "{:.1f}"
+    fmt['musini1'] = "{:.0f}"
+    fmt['musini2'] = "{:.0f}"
     fmt['musini3'] = "{:.1f}"
-    fmt['gamma_j'] = '{:.1f}'
-    fmt['jit_j'] = '{:.1f}'
+    fmt['prad1'] = "{:.1f}"
+    fmt['prad2'] = "{:.1f}"
+    fmt['prad3'] = "{:.1f}"
+    fmt['gamma_j'] = '{:.0f}'
     fmt['dvdt'] = '{:.1f}'
+    fmt['gp_amp'] = "{:.1f}"
+    fmt['gp_explength'] = "{:.0f}"
+    fmt['gp_per'] = "{:.1f}"
+    fmt['gp_perlength'] = "{:.2f}"
+    insert_chain_dict(chain, d, fmt, pre='rv-') 
 
+    '''
     pre = 'ccc-'
     chain['dvdt'] *= 365
     chain['musini1'] *= 1e6
@@ -89,6 +108,8 @@ def val_fit():
     chain['e2'] = chain.eval('secosw2**2 + sesinw2**2')
     d[pre+'e1_p90']  = "{:.2f}".format(chain['e1'].quantile(0.9))
     d[pre+'e2_p90']  = "{:.2f}".format(chain['e2'].quantile(0.9))
+    '''
+
 
     lines = []
     for k, v in d.iteritems():
@@ -96,11 +117,11 @@ def val_fit():
         lines.append(line)
     return lines
 
-def val_lithwick():
+def val_keplerian():
     """
     Print values associated with the Lithwick fits
     """
-    chain = ktwo19.io.load_table('lithwick-emcee-samples',cache=1)
+    chain = ktwo19.io.load_table('keplerian-samples',cache=1)
     chain['muppm1'] = chain.mu1 * 1e6
     chain['muppm2'] = chain.mu2 * 1e6
     chain['zmag']= chain.eval('sqrt( rezfree**2 + imzfree**2)') 
@@ -126,57 +147,6 @@ def val_lithwick():
         lines.append(line)
     return lines
 
-def val_ttvfast():
-    d = OrderedDict()
-    samp = ktwo19.io.load_table('ttvfast-emcee-samples-derived',cache=1)
-
-    fmt = OrderedDict()
-    fmt['muppm1'] = "{:.1f}"
-    fmt['per1'] = "{:.4f}"
-    fmt['secosw1'] = "{:.2f}"
-    fmt['sesinw1'] = "{:.2f}"
-    fmt['tc1'] = "{:.4f}"
-    fmt['muppm2'] = "{:.1f}"
-    fmt['per2'] = "{:.4f}"
-    fmt['secosw2'] = "{:.2f}"
-    fmt['sesinw2'] = "{:.2f}"
-    fmt['tc2'] = "{:.4f}"
-
-    # Derived parameters
-    fmt['masse1'] = "{:.1f}"
-    fmt['masse2'] = "{:.1f}"
-    fmt['mr2'] = "{:.2f}"
-    fmt['e1'] = "{:.2f}"
-    fmt['e2'] = "{:.2f}"
-    fmt['prad1'] = "{:.1f}"
-    fmt['prad2'] = "{:.1f}"
-
-    fmt['rho1'] = "{:.2f}"
-    fmt['rho2'] = "{:.2f}"
-
-    insert_chain_dict(samp, d, fmt) 
-    d['e1_p90']  = "{:.2f}".format(samp['e1'].quantile(0.9))
-    d['e2_p90']  = "{:.2f}".format(samp['e2'].quantile(0.9))
-
-    # envelope fraction
-    fmt = OrderedDict()
-    samp = ktwo19.io.load_table('fenv-samples',cache=1)
-    fmt['fenv1'] = "{:.0f}"
-    fmt['fenv2'] = "{:.0f}"
-    fmt['mcore1'] = "{:.1f}"
-    fmt['mcore2'] = "{:.1f}"
-    fmt['menv1'] = "{:.1f}"
-    fmt['menv2'] = "{:.1f}"
-
-    insert_chain_dict(samp, d, fmt) 
-
-    ## Eccentric model
-
-    lines = []
-    for k, v in d.iteritems():
-        line = r"{{{}}}{{{}}}".format(k,v)
-        lines.append(line)
-    return lines
 
 def insert_chain_dict(chains, d, fmt, pre=''):
     for k in fmt.keys():
@@ -197,58 +167,3 @@ def insert_chain_dict(chains, d, fmt, pre=''):
         s = s.replace('++','+')
         d[keydict+'_fmt'] = s
 
-def print_table(method):
-    if method=="lithwick2-muprior":
-        table(mod, samples, fmtd)
-    elif method=="lithwick2":
-        samples = ktwo19.io.load_samples('lithwick2')
-        samples['muppm1'] = samples.mu1 * 1e6
-        samples['muppm2'] = samples.mu2 * 1e6
-        samples['zmag']= samples.eval('sqrt( rezfree**2 + imzfree**2)') 
-        samples['mr2']= samples.eval('mu2 / mu1') 
-
-        import ktwo19.mnest.mnest_lithwick2  as mod
-        fmtd = OrderedDict()
-        fmtd['per1'] = 5
-        fmtd['tc1'] = 4
-        fmtd['muppm1'] = 1
-        fmtd['per2'] = 4
-        fmtd['tc2'] = 4
-        fmtd['muppm2'] = 1
-        fmtd['ReZfree'] = 3
-        fmtd['ImZfree'] = 3
-        fmtd['zmag'] = 3
-        fmtd['mr2'] = 2
-        table(mod, samples, fmtd)
-    elif method=='ttvfast-npar=11':
-        samples = ktwo19.io.load_samples(method)
-        samples['mass2'] = samples['mr2'] * samples['mass1'] 
-        samples['masse1'] = samples['mass1'] / M_earth
-        samples['masse2'] = samples['mass2'] / M_earth
-        samples['e1'] = samples.eval('sqrt(ecosw1**2 + esinw1**2)')
-        samples['e2'] = samples.eval('sqrt(ecosw2**2 + esinw2**2)')
-
-        import ktwo19.mnest.ttvfast_npar9  as mod
-        fmtd = OrderedDict()
-        fmtd['mass1'] = 5
-        fmtd['per1'] = 5
-        fmtd['ecosw1'] = 3
-        fmtd['esinw1'] = 3
-        fmtd['inc1'] = 0
-        fmtd['node1'] = 0
-        fmtd['tc1'] = 4
-        fmtd['mr2'] = 2
-        fmtd['per2'] = 4
-        fmtd['ecosw2'] = 3
-        fmtd['esinw2'] = 3
-        fmtd['inc2'] = 0
-        fmtd['node2'] = 0
-        fmtd['tc2'] = 4
-        fmtd['stellar_mass'] = 2
-        fmtd['masse1'] = 1
-        fmtd['masse2'] = 1
-        fmtd['e1'] = 3
-        fmtd['e2'] = 3
-        table(mod, samples, fmtd)
-    else:
-        raise ValueError, "{} not supported".format(method)
