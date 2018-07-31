@@ -1,17 +1,17 @@
 import os
-from cStringIO import StringIO
+from cStringIO import StringIO as sio
 
 import numpy as np
-import pandas as pd
-
-import re
-import ttv.lithwick
-from cStringIO import StringIO as sio
-import ktwo19.photometry
-import cpsutils.io
-from .config import bjd0
-import radvel.utils
 from scipy import optimize
+import pandas as pd
+import cpsutils.io
+import radvel.utils
+
+from .config import bjd0
+import ktwo19.keplerian 
+import ktwo19.photometry
+from astropy.time import Time
+from astropy import constants as c
 
 DATADIR = os.path.join(os.path.dirname(__file__),'../data/')
 def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
@@ -50,6 +50,10 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df.to_hdf(cachefn,table)
         return df
 
+    elif table=='stellar':
+        fn = os.path.join(DATADIR, 'data.xlsx')
+        df = pd.read_excel(fn,'stellar',squeeze=True,header=None,index_col=0,usecols=1)
+
     elif table=='ephem-sinukoff16':
         fn = 'data.xlsx'
         fn = os.path.join(DATADIR, fn)
@@ -60,7 +64,7 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
     elif table=='ktwo-everest':
         df = ktwo19.photometry._everest()
 
-    elif table=='rv':
+    elif table=='rv-full':
         vstfn = os.path.join(DATADIR,'rv/vstepic201505350.dat')
         vst, meta = cpsutils.io.read_vst(vstfn,full_output=True, verbose=0)
         sval = cpsutils.io.loadsval()
@@ -68,18 +72,23 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         sval = sval.rename(columns={'obs':'obnm'})
         vst = pd.merge(vst,sval['obnm sval'.split()])
 
-        vst = vst['jd mnvel errvel sval obnm'.split()]
+        vst = vst['jd day mnvel errvel sval obnm cts'.split()]
         vst = vst.rename(columns={'jd':'time'})
         vst['tel'] = 'j'
         vst['time'] -= bjd0
         df = vst
-        omit=['rj197.149']
+
+    elif table=='rv':
+        df = load_table('rv-full')
+        omit=['rj197.149'] # 2 deg from 90% full moon, check sky in obs
+        # omit=['rj197.345'] # 14 deg from 80% full moon 
+        # omit=['rj196.319'] # 22 deg from full moon, possible light cirrus, 50k to be safe 
         # omit = ['rj196.319','rj197.149','rj197.345', 'rj200.88']#,'rj218.227','rj219.300','rj221.153','rj222.136','rj222.327','rj224.149']
         for i in omit:
             if i in df.obnm.tolist():
                 df=df.drop(df.index[df.obnm==i]).reset_index(drop=True) 
                 print 'excluding obs: ' + i
-        df = df['tel obnm time mnvel errvel sval'.split()]
+
 
     elif table=='rv-trend-removed':
         P, post = radvel.utils.initialize_posterior('analysis/radvel/ktwo19_npl=2-cc.py')
@@ -115,14 +124,83 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         fn = os.path.join(DATADIR, 'data.xlsx')
         df = pd.read_excel(fn,'transit-times')
         df = df[df.include==1]
+
+        jd = df.tc
+        df['day'] = Time(df.tc,format='jd',out_subfmt='date').iso
         df['tc'] -= 2454833
-    
+
+
+    elif table=='phot-gp':
+        fn = os.path.join(DATADIR, 'data.xlsx')
+        df = pd.read_excel(
+            fn,sheetname='phot-gp',squeeze=True,header=None,index_col=0
+        )
+
+    elif table=='keplerian-samples':
+        df = ktwo19.keplerian.mcmc()
+
+    elif table=='keplerian-samples-derived':
+        star = load_table('stellar')
+        samp = load_table('keplerian-samples',cache=1)
+        ephem = load_table('ephem-sinukoff16')
+
+        size = len(samp)
+        smass = np.random.normal(loc=star.smass,scale=star.smass_err,size=size)
+        srad = np.random.normal(loc=star.srad,scale=star.srad_err,size=size)
+        samp['smass'] = smass
+        for i in range(1,4):
+            si = str(i)
+            K = samp['k%i' % i]
+            per = ephem['per%i'%i]
+            masse = radvel.utils.Msini(K, per, smass, 0, Msini_units='earth')
+            mu = np.array((masse * c.M_earth) / (smass *c.M_sun))
+            samp['mpsini%i' %i] = masse
+            samp['musini%i' %i] = mu * 1e6
+
+            fn = '201505350.0{}-mcmc-samples.csv.gz'.format(i)
+            fn = os.path.join('data/livingston-lc-fits/',fn)
+            lcsamp = pd.read_csv(fn)            
+            ror = lcsamp.sample(size,replace=True)['k'] 
+            samp['prad%i' % i] = np.array(ror * (srad * c.R_sun) / c.R_earth)
+
+            '''
+            pmass = df['masse%i' % i]
+            df['prad'+si] = prad
+            rho = (np.array(pmass)*c.M_earth) / (4.0/3.0 * np.pi * (np.array(prad) * c.R_earth)**3)
+            rho = np.array(rho.to(u.g * u.cm**-3))
+            df['rho'+si] = rho
+
+            '''
+        df = samp
     else:
         assert False, "Table {} not valid table name".format(table)
 
-
-
     return df
+
+def load_ephem(method='linear'):
+    fn = os.path.join(DATADIR, 'data.xlsx')
+    df = pd.read_excel(fn,'transit-times')
+    df = df[(df.include==1) | (df.inst=='K2')]
+    df['tc'] -= 2454833
+    times = df
+    if method=='lithwick':
+        res = ttv.lithwick.fit_lithwick(times,2) 
+        ephem = pd.DataFrame(index=[1,2])
+        ephem['per'] = [res['per1'],res['per2']]
+        ephem['T'] = [res['T1'],res['T2']]
+        ephem['per'] = ephem['per'].round(6)
+        ephem['T'] = ephem['T'].round(3)
+    elif method=='linear':
+        g = times.groupby('i_planet')
+        ephem = pd.DataFrame(index=g.first().index)
+        ephem['per'] = g.apply(lambda x : np.polyfit(x['i_epoch'],x['tc'],1)[0] )
+        ephem['T'] = g.apply(lambda x : np.polyfit(x['i_epoch'],x['tc'],1)[1] )
+    else:
+        raise ValueError, "method {} not supported".format(method)
+
+    return ephem
+
+
 
 def load_djh():
     s = """\

@@ -8,26 +8,22 @@ instnames = ['j']    # list of instrument names. Can be whatever you like but sh
 ntels = len(instnames)       # number of instruments with unique velocity zero-points
 fitting_basis = 'per tc secosw sesinw k'    # Fitting basis, see radvel.basis.BASIS_NAMES for available basis names
 bjd0 = 2454833
-planet_letters = {1: 'b', 2:'c', 3:'d'}
+planet_letters = {1: 'b', 2:'c'}
 
-aparams = radvel.Parameters(nplanets, basis='per tc secosw sesinw k') 
-
-aparams['per1'] = radvel.Parameter(value=7.919520)
-aparams['tc1'] = radvel.Parameter(value=1980.38319) # time of inferior conjunction of 1st planet
-aparams['secosw1'] = radvel.Parameter(value=0.0)    
-aparams['sesinw1'] = radvel.Parameter(value=0.0)    
-aparams['k1'] = radvel.Parameter(value=10.0)         # velocity semi-amplitude for 1st planet
-
-aparams['per2'] = radvel.Parameter(value=11.907244)
-aparams['tc2'] = radvel.Parameter(value=1984.27545)    # time of inferior conjunction of 1st planet
-aparams['secosw2'] = radvel.Parameter(value=0.0)    
-aparams['sesinw2'] = radvel.Parameter(value=0.0)    
-aparams['k2'] = radvel.Parameter(value=10.0)         # velocity semi-amplitude for 1st planet
-
-aparams['dvdt'] = radvel.Parameter(value=0.0)        # slope
-aparams['curv'] = radvel.Parameter(value=0.0)         # curvature
-aparams['gamma_j'] = radvel.Parameter(1.0)      # velocity zero-point for hires_rj
-aparams['jit_j'] = radvel.Parameter(value=2.6)        # jitter for hires_rj
+# Setup default values
+aparams = radvel.Parameters(nplanets,basis='per tc secosw sesinw k')
+aparams['per1'] = radvel.Parameter(value=7.920751,vary=False)
+aparams['tc1'] = radvel.Parameter(value=1980.379057,vary=False)
+aparams['sesinw1'] = radvel.Parameter(value=0.,vary=False) # fix eccentricity = 0
+aparams['secosw1'] = radvel.Parameter(value=0.,vary=False)
+aparams['k1'] = radvel.Parameter(value=10.0)
+aparams['per2'] = radvel.Parameter(value=11.898036,vary=False)
+aparams['tc2'] = radvel.Parameter(value=1984.304530,vary=False)
+aparams['sesinw2'] = radvel.Parameter(value=0.,vary=False) # fix eccentricity = 0
+aparams['secosw2'] = radvel.Parameter(value=0.,vary=False)
+aparams['k2'] = radvel.Parameter(value=10.0)
+aparams['dvdt'] = radvel.Parameter(value=0.0,vary=False)
+aparams['curv'] = radvel.Parameter(value=0.0,vary=False)
 
 params = aparams.basis.to_any_basis(aparams,fitting_basis)
 # Load radial velocity data, in this example the data is contained in an hdf file,
@@ -51,7 +47,6 @@ planet = {
     'rp2':4.16,
     'rp_err2':0.33,
 }
-
 
 
 # Define prior shapes and widths here.

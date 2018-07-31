@@ -16,9 +16,28 @@ where the sheets correspond to
 
 ## Derive stellar parameters
 
+Update with Gaia values
+
 0_Stellar-Parameters.ipynb
 
 cp ~/.cpsutils/mir3/vel/vstepic201505350.dat data/
+
+
+### Perform Keplerian RV fitting
+
+Run radvel fits and MCMC. This script runs models of various complexities. Look at the reports
+
+```
+run_ktwo24.py fit-rv-keplerian
+cp ktwo24_npl\=3-ccc/ktwo24_npl\=3-ccc_rv_multipanel.pdf ../../paper/fig_rv-keplerian-circ.pdf 
+```
+
+Record the BIC for the in `paper/val_hand.tex`
+
+
+
+
+
 
 ## Notes for Sean
 

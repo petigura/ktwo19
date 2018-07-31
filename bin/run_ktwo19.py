@@ -10,7 +10,7 @@ from collections import OrderedDict
 import ktwo19.io
 import ktwo19.tables
 import ktwo19.values
-#import ktwo19.plotting.omc
+import ktwo19.plotting.keplerian
 
 def main():
     psr = ArgumentParser()
@@ -74,6 +74,7 @@ class Workflow(object):
     def __init__(self):
         # plots
         d = OrderedDict()
+        d['rv'] = ktwo19.plotting.keplerian.rv
         self.plot_dict = d
 
         d = OrderedDict()
@@ -84,7 +85,7 @@ class Workflow(object):
 
         d = OrderedDict()
         d['stat'] = ktwo19.values.val_stat
-        d['fit'] = ktwo19.values.val_fit
+        d['sys'] = ktwo19.values.val_sys
         self.val_dict = d
 
         d = OrderedDict()
@@ -129,6 +130,7 @@ class Workflow(object):
                 with open(fn,'w') as f:
                     f.writelines("\n".join(lines))
 
+
             elif kind=='val':
                 fn = self.key2fn(key, 'val')
                 if name=='all':
@@ -140,17 +142,18 @@ class Workflow(object):
 
                 lines1 = [
                     "\\newcommand{\%s}[1]{%%" % key,
-                    "\IfEqCase{#1}{%",
+                    "\IfEqCase{#1}{",
                 ]
 
                 lines2 = [
-                    "}[\PackageError{tree}{Undefined option to tree: #1}{}]%",
-                    "}%"
+                    "}[XX]",
+                    "}"
                 ]
                 lines = lines1 + lines + lines2
 
                 with open(fn,'w') as f:
-                    f.writelines("\n".join(lines))
+                    f.writelines("%\n".join(lines))
+
 
             i+=1
 
