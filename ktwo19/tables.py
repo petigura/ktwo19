@@ -18,19 +18,19 @@ def tab_rv():
 
 def tab_times():
     df = ktwo19.io.load_table('times',cache=2)
-
+    
     lines = []
     for i, row in df.iterrows():
         line = r""
         line+=r"{inst:s} & "
         line+=r"{i_planet:d} & "
         line+=r"{i_epoch:d} & "
+        line+=r"{day:s} & " 
         line+=r"{tc:.4f} & " 
         line+=r"{tc_err:.4f} & "
         line+=r"{ref_key:s} \\"
         line = line.format(**row)
         lines.append(line)
-
     return lines
 
 def tab_transit_times_predict():
