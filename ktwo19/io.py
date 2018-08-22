@@ -12,6 +12,7 @@ import ktwo19.keplerian
 import ktwo19.photometry
 from astropy.time import Time
 from astropy import constants as c
+from astropy import constants as c
 
 DATADIR = os.path.join(os.path.dirname(__file__),'../data/')
 def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
@@ -171,11 +172,131 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
             df['rho'+si] = rho
 
             '''
+
         df = samp
+
+    elif table=='photodyn-samples':
+        df = read_photodyn_samples()
+
     else:
         assert False, "Table {} not valid table name".format(table)
 
     return df
+
+def read_photodyn_samples():
+    i = 0
+    f = open('K2-19_ForErik/demcmc_k2-19_3pl_massprior.out','r')
+    outL = []
+    while i < 300000:    
+#    while i < 3000:    
+        out = {}
+        while True:
+            line = f.readline()
+            
+            if line[0:4]=='0.1\t':
+                pnum = 1
+                out = dict(out,**planet_line(line,pnum))
+                continue
+            elif line[0:4]=='0.2\t':
+                pnum = 2
+                out = dict(out,**planet_line(line,pnum))
+                continue
+            elif line[0:4]=='0.3\t':
+                pnum = 3
+                out = dict(out,**planet_line(line,pnum))
+                continue
+            elif line.count('Mstar')==1:
+                out['Mstar'] = line.split(' ')[0]
+                continue
+            elif line.count('Rstar')==1:
+                out['Rstar'] = line.split(' ')[0]
+                continue
+            elif line.count('c1')==1:
+                out['c1'] = line.split(' ')[0]
+                continue
+            elif line.count('c2')==1:
+                out['c2'] = line.split(' ')[0]
+                continue
+            elif line.count('dilution')==1:
+                out['dilution'] = line.split(' ')[0]
+                continue
+
+            break
+
+        if out=={}:
+            continue
+        outL.append(out)
+        i+=1
+        if (i % 10000)==0:
+            print i
+        
+
+    df = pd.DataFrame(outL)
+    df = df.astype(float)
+    for i in range(1,4):
+        # Earth masses
+        df['masse%i' % i] = df['massjup%i' % i] * c.M_jup / c.M_earth
+
+        # Eccentricity
+        df['e%i' % i] = df.eval('secosw%i**2 + sesinw%i**2' % (i,i))
+
+        # Argument of peri (rad)
+        df['w%i' % i] = df.eval('arctan2(sesinw%i,secosw%i)' % (i,i)) # radians 
+        # Argument of peri (deg)
+        df['wdeg%i' % i] = df['w%i' % i] / 2 / np.pi * 360
+
+        
+        df['ecosw%i' % i] = df.eval('e%i * cos(w%i)' % (i,i))
+        df['esinw%i' % i] = df.eval('e%i * sin(w%i)' % (i,i))
+        
+        # Check to make sure this is right.
+        df['tp%i' % i] = timetrans_to_timeperi(
+            df['tc%i' % i], df['per%i' % i], df['e%i' % i], df['w%i' % i]
+        )
+        df['Omegarad%i' % i] = df.eval('Omega%i' % i) / 360 * 2 * np.pi
+        df['incrad%i' % i] = df.eval('inc%i' % i) / 360 * 2 * np.pi
+    return df
+
+def planet_line(line,pnum):
+    line = line.split('\t')
+    d = {}
+    d['per%i' % pnum] = line[1] # period (days)
+    d['tc%i' % pnum] = line[2] # time of conjunction (days)
+    d['secosw%i' % pnum] = line[3] # sqrt(e)cos(w) w = argument of peri
+    d['sesinw%i' % pnum] = line[4] # sqrt(e)cos(w)
+    d['inc%i' % pnum] = line[5] # inclination deg
+    d['Omega%i' % pnum] = line[6] # Longitude of ascending node (deg)
+    d['massjup%i' % pnum] = line[7] # Mass in jupiter units
+    d['rrat%i' % pnum] = line[8][:-2] # Radius ratio
+    return d
+
+def timetrans_to_timeperi(tc, per, ecc, omega):
+    """
+    Convert Time of Transit to Time of Periastron Passage
+    Args:
+        tc (float): time of transit    
+        per (float): period [days]
+        ecc (float): eccentricity
+        omega (float): longitude of periastron (radians)
+    
+    Returns:
+        float: time of periastron passage
+    """
+    try:
+        if ecc >= 1:
+            return tc
+    except ValueError:
+        pass
+    
+    f = np.pi/2 - omega
+
+    # eccentric anomaly
+    ee = 2 * np.arctan(np.tan(f/2) * np.sqrt((1-ecc)/(1+ecc)))  
+    # time of periastron
+    tp = tc - per/(2*np.pi) * (ee - ecc*np.sin(ee)) 
+    return tp
+    
+
 
 def load_ephem(method='linear'):
     fn = os.path.join(DATADIR, 'data.xlsx')
