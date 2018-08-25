@@ -62,6 +62,7 @@ def val_sys():
     d['rv-tc2'] = "{:.3f}".format(post.params['tc2'].value)
     d['rv-tc3'] = "{:.3f}".format(post.params['tc3'].value)
 
+    '''
     chain = ktwo19.io.load_table('keplerian-samples-derived',cache=2)
 
     fmt['k1'] = "{:.1f}"
@@ -83,6 +84,55 @@ def val_sys():
     fmt['gp_per'] = "{:.1f}"
     fmt['gp_perlength'] = "{:.2f}"
     insert_chain_dict(chain, d, fmt, pre='rv-') 
+    
+
+
+    '''
+    chain = ktwo19.io.load_table('photodyn-samples',cache=1)
+
+    fmt['Mstar'] = "{:.1f}"
+    fmt['masse1'] = "{:.1f}"
+    fmt['masse2'] = "{:.1f}"
+    fmt['masse3'] = "{:.1f}"
+    fmt['per1'] = "{:.4f}"
+    fmt['per2'] = "{:.4f}"
+    fmt['per3'] = "{:.4f}"
+    fmt['tc1'] = "{:.4f}"
+    fmt['tc2'] = "{:.4f}"
+    fmt['tc3'] = "{:.4f}"
+    fmt['secosw1'] = "{:.2f}"
+    fmt['secosw2'] = "{:.2f}"
+    fmt['secosw3'] = "{:.2f}"
+    fmt['sesinw1'] = "{:.2f}"
+    fmt['sesinw2'] = "{:.2f}"
+    fmt['sesinw3'] = "{:.2f}"
+    fmt['inc1'] = "{:.1f}"
+    fmt['inc2'] = "{:.1f}"
+    fmt['inc3'] = "{:.1f}"
+    fmt['Omega1'] = "{:.1f}"
+    fmt['Omega2'] = "{:.1f}"
+    fmt['Omega3'] = "{:.1f}"
+    fmt['wdeg1'] = "{:.0f}"
+    fmt['wdeg2'] = "{:.0f}"
+    fmt['wdeg3'] = "{:.0f}"
+    fmt['e1'] = "{:.2f}"
+    fmt['e2'] = "{:.2f}"
+    fmt['e3'] = "{:.2f}"
+    fmt['rrat1'] = "{:.3f}"
+    fmt['rrat2'] = "{:.3f}"
+    fmt['rrat3'] = "{:.3f}"
+    fmt['c1'] = "{:.1f}"
+    fmt['c2'] = "{:.1f}"
+    fmt['dilution'] = "{:.1f}"
+
+
+
+
+    insert_chain_dict(chain, d, fmt, pre='pd-') 
+
+
+
+
 
     '''
     pre = 'ccc-'

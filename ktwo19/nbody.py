@@ -128,3 +128,6 @@ def plot_simulation(irow):
     )
     fig1.savefig('nbody/fig_nbody-elements-{}.pdf'.format(irow))
     fig2.savefig('nbody/fig_nbody-orbits-{}.pdf'.format(irow))
+
+
+
