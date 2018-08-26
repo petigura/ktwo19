@@ -42,9 +42,6 @@ def dsetup2(p, npl, epoch):
             system of each planet. 
 
     """
-
-    # const int sofd = SOFD # Size of double? (don't need in Python)
-    # const int sofds = SOFDS; # Size of double signed?
   
     pperplan = 8 # parameters per planet
     pstar = 5 # parameters per star
@@ -55,7 +52,6 @@ def dsetup2(p, npl, epoch):
     c2 = p[npl*pperplan + 3] # not needed in this function
     dilute = p[npl * pperplan+4] # not needed in this function
     
-    bigg = 1.0e0 # Newton's constant # Not used in this function
     ghere = 2.9591220363e-4 # G # 2.9591220363e-4; Msun-AU-day units
     jos =  9.545e-4 # M_jup / M_sol
     
@@ -64,7 +60,7 @@ def dsetup2(p, npl, epoch):
     msys = np.zeros(npl+1) # mass of system
     msys[0] = ms # mass of star is first element in msys
 
-    a = np.zeros(np) # semi-major axis [AU]
+    a = np.zeros(npl) # semi-major axis [AU]
     e = np.zeros(npl) # eccentricity
     inc = np.zeros(npl) # inclination [rad]
     bo = np.zeros(npl) # longitude of ascending node [rad]
@@ -94,26 +90,24 @@ def dsetup2(p, npl, epoch):
         a[i] = (ghere * msys[i+1] * per**2.0 / 4.0 / M_PI**2)**(1.0/3.0)
         pomega = bo[i] + lo[i] # longitude of pericenter [rad]
 
-        # Is this the mean longitude at inferior conjunction? I don't
-        # have the getlambda function. Transit will occur when 
-        # f + lo = pi/2. Therefore, getlambda needs f, e, and pomega, and
-        # Involves solving Kepler's equation.
-        lamb0 = getlambda( (M_PI/2.0 - lo[i]), e[i], pomega)
+        lamb0 = getlambda( (M_PI/2.0 - lo[i]), e[i], pomega) # lambda at the transit
         m0 = lamb0 - pomega; # Mean anomaly at time of transit
         me = m0 + 2 * M_PI * (epoch - T0)/per # Mean anomaly at epoch
         mepomega = me + pomega # Mean longitude at epoch
-        lambepoint = pushpi(&mepomega,1) # Mean longitude at epoch?
-        lambe = lamepoint[0] # not sure what this does
-        f[i] = getf(lambe, e[i], pomega) # I need the function getf
+        lambe = pushpi(mepomega) # Mean longitude at epoch?
+        f[i] = getf(lambe, e[i], pomega) 
 
-    state = np.zeros(npl * pperplan)
+    state = np.zeros(npl * 6)
     for i in range(npl):
         stateplan = keptostate(
             a[i],e[i],inc[i],lo[i],bo[i],f[i],ghere*msys[i+1]
         )
-        state[i*pperplan:i*pperplan+pperplan] = stateplan
+        state[i*6:i*6+6] = stateplan
 
-    state = -1.0 * state # Not sure why it needs to be inverted
+    state = -1.0 * state # Inverted due to our choice of xyz orientation
+    
+    return state
+
 
 def keptostate(a, e, i, lo, bo, f, m):
     """
@@ -145,4 +139,36 @@ def keptostate(a, e, i, lo, bo, f, m):
     return statearr
 
 
+def getlambda(f, e, pomega):
+    bigE = 2.0 * np.arctan( np.sqrt((1.-e) / (1.+e)) * np.tan(f / 2.) )
+    lam = pomega + bigE - e * np.sin(bigE)
+    return lam
 
+def getf(lam, e, pomega):
+    bigM = lam - pomega
+    bigE = bigM
+    for i in range(20):
+        bigE = bigM + e * np.sin(bigE)
+    f = 2.0 * np.arctan( np.sqrt((1.+e) / (1.-e)) * np.tan(bigE / 2.) )
+    return f
+
+def pushpi(angle):
+    while angle > np.pi:
+        angle -= (2.*np.pi)
+    while angle < -np.pi:
+        angle += (2.*np.pi)
+    return angle
+
+def rotatekep(x, y, i, omega, bigO):
+    z = 0.
+    x1 = np.cos(omega) * x - np.sin(omega) * y
+    y1 = np.sin(omega) * x + np.cos(omega) * y
+    z1 = z
+    x2 = x1
+    y2 = np.cos(i) * y1 - np.sin(i) * z1
+    z2 = np.sin(i) * y1 + np.cos(i) * z1
+    x3 = np.cos(bigO) * x2 - np.sin(bigO) * y2
+    y3 = np.sin(bigO) * x2 + np.cos(bigO) * y2
+    z3 = z2
+
+    return x3, y3, z3
