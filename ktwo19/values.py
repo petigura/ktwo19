@@ -89,7 +89,8 @@ def val_sys():
 
     '''
     chain = ktwo19.io.load_table('photodyn-samples',cache=1)
-
+    chain['delta'] = chain.eval('per3/per2 * (2/3) - 1')
+    fmt = OrderedDict()
     fmt['Mstar'] = "{:.1f}"
     fmt['masse1'] = "{:.1f}"
     fmt['masse2'] = "{:.1f}"
@@ -115,23 +116,29 @@ def val_sys():
     fmt['wdeg1'] = "{:.0f}"
     fmt['wdeg2'] = "{:.0f}"
     fmt['wdeg3'] = "{:.0f}"
+    fmt['wdiffdeg'] = "{:.0f}"
     fmt['e1'] = "{:.2f}"
     fmt['e2'] = "{:.2f}"
     fmt['e3'] = "{:.2f}"
-    fmt['rrat1'] = "{:.3f}"
-    fmt['rrat2'] = "{:.3f}"
-    fmt['rrat3'] = "{:.3f}"
+    fmt['rrat1'] = "{:.4f}"
+    fmt['rrat2'] = "{:.4f}"
+    fmt['rrat3'] = "{:.4f}"
     fmt['c1'] = "{:.1f}"
     fmt['c2'] = "{:.1f}"
     fmt['dilution'] = "{:.1f}"
-
-
-
-
+    fmt['prad1'] = "{:.2f}"
+    fmt['prad2'] = "{:.1f}"
+    fmt['prad3'] = "{:.1f}"
+    fmt['delta'] = "{:.5f}"
     insert_chain_dict(chain, d, fmt, pre='pd-') 
 
-
-
+    chain = ktwo19.io.load_table('fenv-samples',cache=1)
+    fmt = OrderedDict()
+    fmt['fenv2'] = "{:.0f}"
+    fmt['mcore2'] = "{:.0f}"
+    fmt['fenv3'] = "{:.0f}"
+    fmt['mcore3'] = "{:.1f}"
+    insert_chain_dict(chain, d, fmt, pre='lopez-') 
 
 
     '''

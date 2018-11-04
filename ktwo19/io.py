@@ -12,7 +12,7 @@ import ktwo19.keplerian
 import ktwo19.photometry
 from astropy.time import Time
 from astropy import constants as c
-from astropy import constants as c
+from astropy import units as u
 
 DATADIR = os.path.join(os.path.dirname(__file__),'../data/')
 def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
@@ -178,17 +178,82 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
     elif table=='photodyn-samples':
         df = read_photodyn_samples()
 
+    elif table=='fenv-samples':
+        lopi = subsaturn.lopez.LopezInterpolator()
+        df = load_table('photodyn-samples')
+
+        stellar = load_table('stellar')
+        nsamp = 1000
+        teff = norm.rvs(stellar.steff, stellar.steff_err,nsamp)
+        smass = norm.rvs(stellar.smass, stellar.smass_err,nsamp)
+        srad = norm.rvs(stellar.srad, stellar.srad_err,nsamp)
+        test = pd.DataFrame(index=range(nsamp))
+
+
+        for i in [2,3]:
+            pmass = df['masse%i' % i]
+            prad = df['prad%i' %i ]
+            per = np.array(df['per%i' %i].sample(nsamp))
+            a = per2a(per*u.day, smass*u.M_sun ).to(u.au).value
+            _teq = teq(teff, srad, a)
+
+            plnt = dict(
+                pl_masse=np.median(pmass),
+                pl_masseerr1=np.std(pmass),
+                pl_masseerr2=-np.std(pmass),
+                pl_rade=np.median(prad),
+                pl_radeerr1=np.std(prad),
+                pl_radeerr2=-np.std(prad),
+                pl_teq=np.median(_teq),
+                pl_teqerr1=np.std(_teq),
+                pl_teqerr2=-np.std(_teq),
+                age=5
+            ) 
+            plnt = pd.Series(plnt)
+            temp = subsaturn.lopez.sample_ss_cmf(lopi,plnt,age=5,size=nsamp)
+            test['fenv%i' % i] = 1 - temp['cmf']
+            for k in 'mcore menv cmf'.split():
+                test[k+str(i)] = temp[k]
+
+            for k in 'fenv cmf'.split():
+                test[k+str(i)] *= 100
+
+        df = test
+
+
+
     else:
         assert False, "Table {} not valid table name".format(table)
 
     return df
 
+def teq(teff, rstar, a):
+    """
+    teff : effective temperature (K)
+    rstar: stellar radii (solar radii)
+    a: semi-major axis AU
+    """
+    teq_earth = 278
+    _teq = teq_earth * (teff / 5770.0) * (rstar)**0.5 * a**-0.5
+    return _teq
+
+def per2a(per, mstar):
+    a = (per**2 / 4 / np.pi**2 * c.G * mstar)**(1/3.)
+    return a
+
+
+from scipy.stats import norm
+
+
+import sys
+sys.path.append('/Users/petigura/Research/subsaturn/')
+import subsaturn.lopez
 def read_photodyn_samples():
     i = 0
     f = open('K2-19_ForErik/demcmc_k2-19_3pl_massprior.out','r')
     outL = []
-    while i < 300000:    
-#    while i < 3000:    
+#    while i < 300000:    
+    while i < 3000:    # debugging
         out = {}
         while True:
             line = f.readline()
@@ -255,6 +320,11 @@ def read_photodyn_samples():
         )
         df['Omegarad%i' % i] = df.eval('Omega%i' % i) / 360 * 2 * np.pi
         df['incrad%i' % i] = df.eval('inc%i' % i) / 360 * 2 * np.pi
+        df['prad%i' %i] = df.eval('Rstar * rrat%i' % i) * c.R_sun / c.R_earth
+
+
+    df['wdiffdeg'] = df.eval('wdeg3 - wdeg2')
+
     return df
 
 def planet_line(line,pnum):
@@ -274,7 +344,7 @@ def timetrans_to_timeperi(tc, per, ecc, omega):
     """
     Convert Time of Transit to Time of Periastron Passage
     Args:
-        tc (float): time of transit    
+        tc (float): time of conjunction
         per (float): period [days]
         ecc (float): eccentricity
         omega (float): longitude of periastron (radians)
@@ -288,12 +358,17 @@ def timetrans_to_timeperi(tc, per, ecc, omega):
     except ValueError:
         pass
     
+    # true anomaly at time of conjunction 
     f = np.pi/2 - omega
 
-    # eccentric anomaly
+    # eccentric anomaly at time of conjunction
     ee = 2 * np.arctan(np.tan(f/2) * np.sqrt((1-ecc)/(1+ecc)))  
+
+    # mean anomaly at time of conjunction
+    ma = ee - ecc*np.sin(ee) 
+
     # time of periastron
-    tp = tc - per/(2*np.pi) * (ee - ecc*np.sin(ee)) 
+    tp = tc - per/(2*np.pi) * ma
     return tp
     
 

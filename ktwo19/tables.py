@@ -20,12 +20,12 @@ def tab_times():
     df = ktwo19.io.load_table('times',cache=2)
     
     lines = []
+    df['planet'] = df.i_planet.replace(1,'K2-19b').replace(2,'K2-19c')
     for i, row in df.iterrows():
         line = r""
-        line+=r"{inst:s} & "
-        line+=r"{i_planet:d} & "
+        line+=r"{planet:s} & "
         line+=r"{i_epoch:d} & "
-        line+=r"{day:s} & " 
+        line+=r"{inst:s} & "
         line+=r"{tc:.4f} & " 
         line+=r"{tc_err:.4f} & "
         line+=r"{ref_key:s} \\"

@@ -74,7 +74,7 @@ class Workflow(object):
     def __init__(self):
         # plots
         d = OrderedDict()
-        d['rv'] = ktwo19.plotting.keplerian.rv
+        d['rv'] = ktwo19.plotting.keplerian.fig_rv
         self.plot_dict = d
 
         d = OrderedDict()
