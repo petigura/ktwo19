@@ -190,7 +190,7 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         test = pd.DataFrame(index=range(nsamp))
 
 
-        for i in [2,3]:
+        for i in [1,2,3]:
             pmass = df['masse%i' % i]
             prad = df['prad%i' %i ]
             per = np.array(df['per%i' %i].sample(nsamp))
@@ -212,12 +212,12 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
             plnt = pd.Series(plnt)
             temp = subsaturn.lopez.sample_ss_cmf(lopi,plnt,age=5,size=nsamp)
             test['fenv%i' % i] = 1 - temp['cmf']
+            test['teq%i' % i ] = _teq
             for k in 'mcore menv cmf'.split():
                 test[k+str(i)] = temp[k]
 
             for k in 'fenv cmf'.split():
                 test[k+str(i)] *= 100
-
         df = test
 
 

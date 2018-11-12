@@ -48,7 +48,7 @@ def posterior():
     post.params['dvdt'].vary=True
     return post
 
-def maximum_a_posteriori():
+def max_a_posteriori():
     post = posterior()
     res = optimize.minimize(
         post.neglogprob_array, post.get_vary_params(), method='Powell',

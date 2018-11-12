@@ -35,7 +35,7 @@ def val_stat(return_dict=False):
 
     return lines
 
-def val_sys():
+def val_sys(return_dict=False):
     d = OrderedDict()
     df = ktwo19.io.load_table('stellar',cache=1)
     for k in df.index:
@@ -44,12 +44,12 @@ def val_sys():
     d['steff_err'] = "{:.0f}".format(df.ix['steff_err'])
 
     df = ktwo19.io.load_table('phot-gp',cache=1)
-    d['phot-gp-eta1'] = "{:.2f}".format(df.ix['eta1'] * 1e2)
-    d['phot-gp-eta1_err'] = "{:.2f}".format(df.ix['eta1_err'] * 1e2)
+    d['phot-gp-eta1'] = "{:.1f}".format(df.ix['eta1'] * 1e2)
+    d['phot-gp-eta1_err'] = "{:.1f}".format(df.ix['eta1_err'] * 1e2)
     d['phot-gp-eta2'] = "{:.0f}".format(df.ix['eta2'])
     d['phot-gp-eta2_err'] = "{:.0f}".format(df.ix['eta2_err'])
-    d['phot-gp-eta3'] = "{:.0f}".format(df.ix['eta3'])
-    d['phot-gp-eta3_err'] = "{:.0f}".format(df.ix['eta3_err'])
+    d['phot-gp-eta3'] = "{:.1f}".format(df.ix['eta3'])
+    d['phot-gp-eta3_err'] = "{:.1f}".format(df.ix['eta3_err'])
     d['phot-gp-eta4'] = "{:.2f}".format(df.ix['eta4'])
     d['phot-gp-eta4_err'] = "{:.2f}".format(df.ix['eta4_err'])
 
@@ -62,8 +62,7 @@ def val_sys():
     d['rv-tc2'] = "{:.3f}".format(post.params['tc2'].value)
     d['rv-tc3'] = "{:.3f}".format(post.params['tc3'].value)
 
-    '''
-    chain = ktwo19.io.load_table('keplerian-samples-derived',cache=2)
+    chain = ktwo19.io.load_table('keplerian-samples-derived',cache=1,cachefn='load_table_cache-rv.hdf')
 
     fmt['k1'] = "{:.1f}"
     fmt['k2'] = "{:.1f}"
@@ -74,26 +73,33 @@ def val_sys():
     fmt['musini1'] = "{:.0f}"
     fmt['musini2'] = "{:.0f}"
     fmt['musini3'] = "{:.1f}"
-    fmt['prad1'] = "{:.1f}"
-    fmt['prad2'] = "{:.1f}"
-    fmt['prad3'] = "{:.1f}"
-    fmt['gamma_j'] = '{:.0f}'
-    fmt['dvdt'] = '{:.1f}'
-    fmt['gp_amp'] = "{:.1f}"
-    fmt['gp_explength'] = "{:.0f}"
-    fmt['gp_per'] = "{:.1f}"
-    fmt['gp_perlength'] = "{:.2f}"
-    insert_chain_dict(chain, d, fmt, pre='rv-') 
-    
 
 
     '''
+    fmt['prad1'] = "{:.1f}"
+    fmt['prad2'] = "{:.1f}"
+    fmt['prad3'] = "{:.1f}"
+    '''
+
+    fmt['gamma_j'] = '{:.0f}'
+    fmt['dvdt'] = '{:.1f}'
+    fmt['gp_amp'] = "{:.1f}"
+    fmt['gp_explength'] = "{:.1f}"
+    fmt['gp_per'] = "{:.1f}"
+    fmt['gp_perlength'] = "{:.2f}"
+
+    pre = 'rv-'
+    insert_chain_dict(chain, d, fmt, pre=pre) 
+    d[pre+'mpsini2_p95']  = "{:.1f}".format(chain['mpsini2'].quantile(0.95))
+    d[pre+'mpsini3_p95']  = "{:.1f}".format(chain['mpsini3'].quantile(0.95))
+
     chain = ktwo19.io.load_table('photodyn-samples',cache=1)
     chain['delta'] = chain.eval('per3/per2 * (2/3) - 1')
+    chain['masse3onmasse2'] = chain.eval('masse3/masse2')
     fmt = OrderedDict()
     fmt['Mstar'] = "{:.1f}"
     fmt['masse1'] = "{:.1f}"
-    fmt['masse2'] = "{:.1f}"
+    fmt['masse2'] = "{:.0f}"
     fmt['masse3'] = "{:.1f}"
     fmt['per1'] = "{:.4f}"
     fmt['per2'] = "{:.4f}"
@@ -130,6 +136,8 @@ def val_sys():
     fmt['prad2'] = "{:.1f}"
     fmt['prad3'] = "{:.1f}"
     fmt['delta'] = "{:.5f}"
+    fmt['masse3onmasse2']  = "{:.2f}"
+
     insert_chain_dict(chain, d, fmt, pre='pd-') 
 
     chain = ktwo19.io.load_table('fenv-samples',cache=1)
@@ -138,6 +146,10 @@ def val_sys():
     fmt['mcore2'] = "{:.0f}"
     fmt['fenv3'] = "{:.0f}"
     fmt['mcore3'] = "{:.1f}"
+    fmt['teq1'] = "{:.0f}"
+    fmt['teq2'] = "{:.0f}"
+    fmt['teq3'] = "{:.0f}"
+    
     insert_chain_dict(chain, d, fmt, pre='lopez-') 
 
 
@@ -167,11 +179,13 @@ def val_sys():
     d[pre+'e2_p90']  = "{:.2f}".format(chain['e2'].quantile(0.9))
     '''
 
-
+    if return_dict:
+        return d
     lines = []
     for k, v in d.iteritems():
         line = r"{{{}}}{{{}}}".format(k,v)
         lines.append(line)
+
     return lines
 
 def val_keplerian():
@@ -206,21 +220,39 @@ def val_keplerian():
 
 
 def insert_chain_dict(chains, d, fmt, pre=''):
+    thresh = 1.5
+    # If err1 and err2 are consistent to these values, then report
+    # symetric errorbars
+
     for k in fmt.keys():
         keydict = '{}{}'.format(pre,k)
         keychain = '{}'.format(k)
         s = fmt[k]
         chain = chains[keychain]
         q = chain.quantile([0.16,0.50,0.84])
-        val = s.format(q.ix[0.50])
-        err1 = s.format(q.ix[0.84] - q.ix[0.50])
-        err2 = s.format(q.ix[0.16] - q.ix[0.50])
 
+        val = q.ix[0.50]
+        err1 = q.ix[0.84] - q.ix[0.50]
+        err2 = q.ix[0.16] - q.ix[0.50]
+        is_asymetric = (-err2/err1 > thresh) or (-err1/err2 > thresh)
+        
+        if not is_asymetric:
+            err = 0.5 * (err1 - err2)
+            err1 = err 
+            err2 = -err
+
+        val = s.format(val)
+        err1 = s.format(err1)
+        err2 = s.format(err2)
+
+        if is_asymetric:
+            s = "$%s^{+%s}_{%s}$" % (val, err1, err2)
+        else:
+            s = "$%s \pm %s$" % (val, err1)
+
+        s = s.replace('++','+')
         d[keydict] = val
         d[keydict+'_err1'] = err1
         d[keydict+'_err2'] = err2
-
-        s = "$%s^{+%s}_{%s}$" % (val, err1,err2)
-        s = s.replace('++','+')
         d[keydict+'_fmt'] = s
 

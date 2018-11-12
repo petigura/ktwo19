@@ -70,11 +70,27 @@ def update_paper(args):
     w = Workflow()
     w.update_paper() 
 
+import ktwo19.plotting.context
+
+
+
+
+
+
+
+
+
+
+
+
 class Workflow(object):
     def __init__(self):
         # plots
         d = OrderedDict()
         d['rv'] = ktwo19.plotting.keplerian.fig_rv
+        d['context-smetmass'] = ktwo19.plotting.context.fig_smetmass
+        d['context-teqfenv'] = ktwo19.plotting.context.fig_teqfenv
+        d['context-massradius'] = ktwo19.plotting.context.fig_massradius
         self.plot_dict = d
 
         d = OrderedDict()
@@ -109,18 +125,18 @@ class Workflow(object):
             if kind=='plot':
                 if name=='all':
                     func()
-                elif name==key:
+                elif key.count(name)==1:
                     func()
                 else:
                     continue
-
+                    
                 fn = self.key2fn(key, 'plot')
-                gcf().savefig(fn)
+                plt.gcf().savefig(fn)
 
             elif kind=='table':
                 if name=='all':
                     lines = func()
-                elif name==key:
+                elif key.count(name)==1:
                     lines = func()
                 else:
                     continue
@@ -129,7 +145,6 @@ class Workflow(object):
                 fn = self.key2fn(key, 'table')
                 with open(fn,'w') as f:
                     f.writelines("\n".join(lines))
-
 
             elif kind=='val':
                 fn = self.key2fn(key, 'val')
@@ -153,7 +168,6 @@ class Workflow(object):
 
                 with open(fn,'w') as f:
                     f.writelines("%\n".join(lines))
-
 
             i+=1
 
