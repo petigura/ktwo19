@@ -5,9 +5,10 @@ from scipy import optimize
 from astropy.time import Time
 import pandas as pd
 import ktwo19.io
+bjd0 = 2454833
 
 def tab_rv():
-    df = ktwo24.io.load_table('rv')
+    df = ktwo19.io.load_table('rv')
     lines = []
     for i, row in df.iterrows():
         line = r""
@@ -34,15 +35,37 @@ def tab_times():
     return lines
 
 def tab_transit_times_predict():
-    df = ktwo24.io.load_table('times-predict',cache=2)
+    p = ktwo19.plotting.phodymm.TTVPlotter()
+
+    mod1 = p.mod[0]
+    for i in range(len(mod1)):
+        mod1[i]['samp'] = i
+        mod1[i]['i_planet'] = 2
+
+    mod2 = p.mod[1]
+    for i in range(len(mod2)):
+        mod2[i]['samp'] = i
+        mod2[i]['i_planet'] = 3
+
+    mod1 = pd.concat(mod1)
+    mod2 = pd.concat(mod2)
+    mod1['n'] += 6 # modifying to agree with the transit index in the excel table
+    mod2['n'] += 3 #
+    mod = pd.concat([mod1,mod2])
+    g = mod.groupby(['i_planet','n'],as_index=False)
+    df = g.first()[['i_planet','n']]
+    df['tc'] = g.mean()['t']
+    df['tc_err'] = g.std()['t']
+
     df = df.reset_index(drop=True)
-    df['s_planet'] = df.i_planet.astype(str).str.replace('1','b').\
-                     str.replace('2','c')
+    df['s_planet'] = df.i_planet.astype(int).astype(str).\
+                     str.replace('2','b').str.replace('3','c')
     iso = Time(df.tc+bjd0,format='jd').iso
     df['date'] = pd.Series(iso).str.slice(stop=10)
+    df['i_epoch'] = df.n.astype(int)
     date = pd.to_datetime(iso,infer_datetime_format=True)
-    df['tc_err'] = 0.5 * (df.tc_err1 - df.tc_err2)
-    df = df[date.year <= 2025]
+    df = df[(pd.datetime(2014,5,30) < date) & (date < pd.datetime(2030,1,1)) ]
+    df = df.sort_values(by='tc')
     lines = []
     for i, row in df.iterrows():
         line = r""
@@ -50,9 +73,8 @@ def tab_transit_times_predict():
         line+=r"{s_planet:s} & {i_epoch:.0f} & {date:s} & {tc:.4f} & {tc_err:.4f} \\"
         line = line.format(**row)
         lines.append(line)
+
     return lines
-
-
 
 
 def table(mod, samples, format_dict):

@@ -1,62 +1,76 @@
 # K2-19 TTV+RV project
 
-## Data
+## Dependencies
 
-Hand entered data lives in
+The analysis doesn't work with the newest version of the code.
 
 ```
-data/data.xlsx
+conda create -n ktwo19 python=2.7
+source activate ktwo19
+pip install radvel==1.2
+pip install jinja2==2.0
+conda install seaborn
+conda install xarray
+pip install celerite
+pip install ChainConsumer
+conda install matplotlib=2.0.2 
+pip install xlrd
 ```
 
-where the sheets correspond to
+Run in the ktwo19 conda environment on Erik's laptop
+
+## Receipe 
+
+### 1. Gather data
+
+Hand Entered data lives in `data/data.xlsx` where the sheets correspond to
 
 - transit-times: list of transit times 
 - ephem-sinukoff16: Ephemeris given in Sinukoff et al. (2016).  
 - stellar-sme: stellar parameters from Brewer et al. (2016)
 
-## Derive stellar parameters
+Get RV data with 
 
-Update with Gaia values
-
-0_Stellar-Parameters.ipynb
-
+```
 cp ~/.cpsutils/mir3/vel/vstepic201505350.dat data/
-
-
-### Perform Keplerian RV fitting
-
-Run radvel fits and MCMC. This script runs models of various complexities. Look at the reports
-
-```
-run_ktwo24.py fit-rv-keplerian
-cp ktwo24_npl\=3-ccc/ktwo24_npl\=3-ccc_rv_multipanel.pdf ../../paper/fig_rv-keplerian-circ.pdf 
 ```
 
-Record the BIC for the in `paper/val_hand.tex`
+### 2. Derive stellar parameters
 
+Update with Gaia values by following instructions in ``0_Stellar-Parameters.ipynb``
 
-
-
-
-
-## Notes for Sean
-
-### Photometry
-
-K2 Photometry (Everest)
+### 3. Train the GP using the photometry
 
 ```
-analysis/photodyn/photometry-ktwo.tsv
+1_Train-GP-with-photometry
 ```
 
-### RVs
-
-I've included two RV timeseries. 
+### 4. Perform Keplerian RV fittng MCMC use
 
 ```
-analysis/photodyn/rv.tsv
-analysis/photodyn/rv-trend-removed.tsv	
+2_Model-Comparison-BIC
 ```
+
+which will perform some radvel fits with models of varying complexity. Run radvel fits and MCMC. This script runs models of various complexities. Look at the reports.
+
+NOTE: currently, this doesn't work because of radvel version
+issues. If I need to run this again, just migrate the code to the
+current version of radvel.
+
+### 4. Prepare data for photodynamical modeling
+
+```
+run_ktwo19.py photdyn-prepare 
+```
+
+This generates the K2 photometry, which is stored
+
+- `analysis/photodyn/photometry-ktwo.tsv` 
+
+and the RVs which are stored
+
+- `analysis/photodyn/rv.tsv`
+- `analysis/photodyn/rv-trend-removed.tsv`
 
 `rv.tsv` is the raw RV dataset. For `rv-trend-removed.tsv` I've subtracted off the MAP gamma a dvdt value.
 
@@ -64,16 +78,18 @@ analysis/photodyn/rv-trend-removed.tsv
 - mnvel: the mean RV
 - errvel: measurement uncertainty
 
+NOTE: the analysis did not model the RVs directly.
 
-## Old notes
+### 5 Run photodynamical code
 
-## Run MCMC  
+Follow the instructions in `XX_Figure-Photodyn-Bestfit.ipynb`
 
-```
-$ bin/mcmc_mnest.py <method> <id> --livepoints=300
-```
+### 5 Create the photodymm-bestfit figure
 
-Currently, I'm getting good fits with 
+Follow the instructions in `XX_Figure-Photodyn-Bestfit.ipynb`
 
-method == 'ttvfast-npar9'
+### 6 Create the TTV Fit figure
 
+Follow the instructions here:
+
+XX_Figure_TTVFit.ipynb

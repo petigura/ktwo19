@@ -11,7 +11,8 @@ Would you also mind having a look at my pyhton code. I left some
 questions and clafications as comments.
 
 """
-
+import radvel._kepler
+from  matplotlib.pylab import * 
 def dsetup2(p, npl, epoch):
     """
 
@@ -170,5 +171,148 @@ def rotatekep(x, y, i, omega, bigO):
     x3 = np.cos(bigO) * x2 - np.sin(bigO) * y2
     y3 = np.sin(bigO) * x2 + np.cos(bigO) * y2
     z3 = z2
-
     return x3, y3, z3
+
+
+def compute_true_anomaly(t, per, a, e, tp):
+    """
+    Compute true anomaly at specified time
+
+    Args:
+        t (float): time to compute true anomaly
+        per (float): orbital period
+        a (float): semimajor axis 
+        e (float): eccentricity 
+        tp (float): time of periastron passage
+
+    Returns
+        float: true anomaly
+    
+    """
+    n = 2 * pi / per
+    M = n * (t - tp) # compute mean anomaly
+    M = np.array([M]) # needs array
+    E = radvel._kepler.kepler_array(M,e) # solve kepler's equation
+    E = E[0]
+    f = 2 * np.arctan(np.sqrt((1+e)/(1-e)) * tan(E/2) ) # true anomally
+    return f
+
+
+def rotate_cartesian(cart, inc, Omega, omega):
+    """
+    cart: tuple (x,y,z,vx,vy,vz)
+    """
+    
+    P1,P2,P3 = rotation_matricies(inc, Omega, omega)
+    x,y,z,vx,vy,vz = cart
+
+    pos0 = np.matrix(
+        [[x],
+         [y],
+         [z]]
+    )
+    vel0 = np.matrix(
+        [[vx],
+         [vy],
+         [vz]]
+    )
+    pos1 = P3 * P2 * P1 * pos0
+    vel1 = P3 * P2 * P1 * vel0
+    
+    x1 = pos1[0,0]
+    y1 = pos1[1,0]
+    z1 = pos1[2,0]
+    vx1 = vel1[0,0]
+    vy1 = vel1[1,0]
+    vz1 = vel1[2,0]
+    return x1, y1, z1, vx1, vy1,vz1
+
+def rotation_matricies(inc, Omega, omega):
+    """
+    Rotates coordinate by omega, inc, and Omega  MD p50
+    """
+    P1 = np.matrix([
+        [cos(omega), -sin(omega), 0],
+        [sin(omega), cos(omega), 0],
+        [0, 0, 1],
+    ])
+
+    P2 = np.matrix([
+        [1, 0, 0],
+        [0, cos(inc), -sin(inc)],
+        [0, sin(inc), cos(inc)],
+    ])
+
+    P3 = np.matrix([
+        [cos(Omega), -sin(Omega), 0],
+        [sin(Omega), cos(Omega), 0],
+        [0,0,1]
+    ])
+    return P1, P2, P3
+
+def keplerian_to_cartesian(per, a, e, inc, Omega, omega, f):
+    """
+
+    Confirmed that this works with worked example in MD p51
+    """
+    n = 2 * pi / per
+    r = a * (1 - e**2) / (1 + e * cos(f))
+    x = r * cos(f)
+    y = r * sin(f)
+
+    C = n * a / np.sqrt(1 - e**2) # constant 
+    vx = - C * sin(f)
+    vy = C * (e + cos(f))
+
+    cart = x,y,0,vx,vy,0
+    cart1 = rotate_cartesian(cart, inc, Omega, omega)
+    return cart1
+
+def cartesian_to_keplerian(cart, msys):
+    x,y,z,vx,vy,vz = cart
+
+    hx = y*vz - z*vy  # 2.129
+    hy = z*vx - x*vz
+    hz = x*vy - y*vx
+    h = np.sqrt(hx**2 + hy**2 + hz**2)
+
+    R = sqrt(x**2 + y**2 + z**2) # eqn 2.126
+    V = sqrt(vx**2 + vy**2 + vz**2) # eqn 2.126
+
+    RVR = x*vx + y*vy + z*vz # 2.218
+    VR = sign(RVR) * sqrt(V**2 - h**2 / R**2)
+
+    G = 2.9591220363e-4 # G # 2.9591220363e-4; Msun-AU-day units
+
+    a = (2 / R - V**2 / (G * msys))**-1  # 2.134
+    e = np.sqrt(1 - h**2 / G / msys/ a) # 2.135
+    inc = arccos(hz / h)
+
+    hsininc = h * sin(inc)
+    # step 4
+    if hz > 0:
+        sinOmega = hx / hsininc
+        cosOmega = -hy / hsininc
+    else:
+        sinOmega = -hx / hsininc
+        cosOmega = +hy / hsininc
+
+    if hsininc==0:
+        print "inc == 0, so node is undefined"
+        Omega = 0.0
+    else:
+        Omega = arctan2(sinOmega, cosOmega)
+    
+    # Step 5
+    sinomegaf = z / R / sin(inc) # sin(omega + f)
+    cosomegaf = 1 / cos(Omega) * (x / R + sin(Omega)*sinomegaf * cos(inc) ) 
+    omegaf = arctan2(sinomegaf,cosomegaf)
+
+    # Step 6
+    sinf = a * (1 - e**2) / h / e * VR
+    cosf = 1 / e * (a *(1 - e**2)/R - 1 )
+
+    f = arctan2(sinf,cosf)
+    omega = omegaf - f 
+    return a, e, inc, Omega, omega, f 
+

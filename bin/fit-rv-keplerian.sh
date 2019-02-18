@@ -1,4 +1,3 @@
-cd /Users/petigura/Research/K2-19_TTV+RV/analysis/radvel/
 # All circular (preferred model with preferred bic)
 radvel fit -s ktwo19_npl=2-cc.py 
 radvel mcmc -s ktwo19_npl=2-cc.py 

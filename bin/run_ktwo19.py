@@ -11,6 +11,8 @@ import ktwo19.io
 import ktwo19.tables
 import ktwo19.values
 import ktwo19.plotting.keplerian
+import ktwo19.plotting.phodymm
+import ktwo19.plotting.context
 
 def main():
     psr = ArgumentParser()
@@ -70,17 +72,6 @@ def update_paper(args):
     w = Workflow()
     w.update_paper() 
 
-import ktwo19.plotting.context
-
-
-
-
-
-
-
-
-
-
 
 
 class Workflow(object):
@@ -91,12 +82,26 @@ class Workflow(object):
         d['context-smetmass'] = ktwo19.plotting.context.fig_smetmass
         d['context-teqfenv'] = ktwo19.plotting.context.fig_teqfenv
         d['context-massradius'] = ktwo19.plotting.context.fig_massradius
+
+        d['corner-ecc'] = lambda: ktwo19.plotting.phodymm.fig_corner('corner-ecc')
+        d['corner-mass'] = lambda: ktwo19.plotting.phodymm.fig_corner('corner-mass')
+        d['corner-ecosw'] = lambda: ktwo19.plotting.phodymm.fig_corner('corner-ecosw')
+        d['corner-esinw'] = lambda: ktwo19.plotting.phodymm.fig_corner('corner-esinw')
+        d['corner-all'] = lambda: ktwo19.plotting.phodymm.fig_corner('corner-all')
+
+        d['photodyn-ttvfit'] = ktwo19.plotting.phodymm.fig_ttvfit
+        d['photodyn-bestfit'] = ktwo19.plotting.phodymm.fig_photodyn_bestfit
         self.plot_dict = d
 
         d = OrderedDict()
         d['rv'] = ktwo19.tables.tab_rv
         d['rv-stub'] = lambda : ktwo19.tables.tab_rv()[:10]
         d['times'] = ktwo19.tables.tab_times
+        d['transit-times-predict'] = ktwo19.tables.tab_transit_times_predict
+        d['transit-times-predict-stub1'] = \
+                lambda : ktwo19.tables.tab_transit_times_predict()[:5]
+        d['transit-times-predict-stub2'] = \
+                lambda : ktwo19.tables.tab_transit_times_predict()[-5:]
         self.table_dict = d
 
         d = OrderedDict()

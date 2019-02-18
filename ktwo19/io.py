@@ -5,14 +5,20 @@ import numpy as np
 from scipy import optimize
 import pandas as pd
 import cpsutils.io
-import radvel.utils
+#import radvel.utils
 
 from .config import bjd0
-import ktwo19.keplerian 
-import ktwo19.photometry
+#import ktwo19.keplerian 
+#import ktwo19.photometry
 from astropy.time import Time
 from astropy import constants as c
 from astropy import units as u
+from matplotlib.pylab import *
+
+from scipy.stats import norm
+import sys
+sys.path.append('/Users/petigura/Research/subsaturn/')
+#import subsaturn.lopez
 
 DATADIR = os.path.join(os.path.dirname(__file__),'../data/')
 def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
@@ -242,22 +248,21 @@ def per2a(per, mstar):
     return a
 
 
-from scipy.stats import norm
-
-
-import sys
-sys.path.append('/Users/petigura/Research/subsaturn/')
-import subsaturn.lopez
-def read_photodyn_samples():
+def read_photodyn_samples(fn):
+    ghere = 2.9591220363e-4 # G # 2.9591220363e-4; Msun-AU-day units
     i = 0
-    f = open('K2-19_ForErik/demcmc_k2-19_3pl_massprior.out','r')
+    iline = 0
+    f = open(fn,'r')
     outL = []
-#    while i < 300000:    
-    while i < 3000:    # debugging
+    while i < 30000:    
+#    while i < 3000:    # debugging
+#        if i==5040:
+#            import pdb;pdb.set_trace()
         out = {}
         while True:
             line = f.readline()
-            
+            iline += 1
+            print iline
             if line[0:4]=='0.1\t':
                 pnum = 1
                 out = dict(out,**planet_line(line,pnum))
@@ -285,6 +290,9 @@ def read_photodyn_samples():
             elif line.count('dilution')==1:
                 out['dilution'] = line.split(' ')[0]
                 continue
+            elif line=='':
+                break
+            
 
             break
 
@@ -298,10 +306,14 @@ def read_photodyn_samples():
 
     df = pd.DataFrame(outL)
     df = df.astype(float)
+    msys = df['Mstar'] # mass of star is first element in msys
+
     for i in range(1,4):
         # Earth masses
-        df['masse%i' % i] = df['massjup%i' % i] * c.M_jup / c.M_earth
+        df['masse%i' % i] = df['massj%i' % i] * c.M_jup / c.M_earth
+        df['masss%i' % i] = df['massj%i' % i] * c.M_jup / c.M_sun
 
+        msys = msys + df['masss%i' % i] # mass of body, and all internal bodies
         # Eccentricity
         df['e%i' % i] = df.eval('secosw%i**2 + sesinw%i**2' % (i,i))
 
@@ -314,18 +326,26 @@ def read_photodyn_samples():
         df['ecosw%i' % i] = df.eval('e%i * cos(w%i)' % (i,i))
         df['esinw%i' % i] = df.eval('e%i * sin(w%i)' % (i,i))
         
+        # Kepler's third law
+        per = df['per%i' % i]
+        df['a%i' % i] = (ghere * msys * per**2.0 / 4.0 / pi**2)**(1.0/3.0)
+
         # Check to make sure this is right.
         df['tp%i' % i] = timetrans_to_timeperi(
             df['tc%i' % i], df['per%i' % i], df['e%i' % i], df['w%i' % i]
         )
+
+
         df['Omegarad%i' % i] = df.eval('Omega%i' % i) / 360 * 2 * np.pi
         df['incrad%i' % i] = df.eval('inc%i' % i) / 360 * 2 * np.pi
         df['prad%i' %i] = df.eval('Rstar * rrat%i' % i) * c.R_sun / c.R_earth
 
-
     df['wdiffdeg'] = df.eval('wdeg3 - wdeg2')
 
     return df
+
+
+
 
 def planet_line(line,pnum):
     line = line.split('\t')
@@ -336,7 +356,7 @@ def planet_line(line,pnum):
     d['sesinw%i' % pnum] = line[4] # sqrt(e)cos(w)
     d['inc%i' % pnum] = line[5] # inclination deg
     d['Omega%i' % pnum] = line[6] # Longitude of ascending node (deg)
-    d['massjup%i' % pnum] = line[7] # Mass in jupiter units
+    d['massj%i' % pnum] = line[7] # Mass in jupiter units
     d['rrat%i' % pnum] = line[8][:-2] # Radius ratio
     return d
 
