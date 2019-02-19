@@ -56,7 +56,6 @@ def max_a_posteriori():
     )
     return post
 
-
 def mcmc():
     post = max_a_posteriori()
     chains = radvel.mcmc(post,nrun=1000,ensembles=3)
