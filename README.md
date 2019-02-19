@@ -2,10 +2,10 @@
 
 ## Dependencies
 
-The analysis doesn't work with the newest version of the code.
+The analysis doesn't work with the newest version of radvel. I had to create a conda environment `ktwo19-2` and install the following packages
 
 ```
-conda create -n ktwo19 python=2.7
+conda create -n ktwo19-2 python=2.7
 source activate ktwo19
 pip install radvel==1.2
 pip install jinja2==2.0
@@ -45,19 +45,47 @@ Update with Gaia values by following instructions in ``0_Stellar-Parameters.ipyn
 1_Train-GP-with-photometry
 ```
 
-### 4. Perform Keplerian RV fittng MCMC use
+### 4. Perform Keplerian RV fittng
+
+First compare models using 
 
 ```
-2_Model-Comparison-BIC
+jupyter notebook 2_Model-Comparison-BIC.ipynb
 ```
 
-which will perform some radvel fits with models of varying complexity. Run radvel fits and MCMC. This script runs models of various complexities. Look at the reports.
+Model 5. with the circular planet b and the GP noise model is
+preferred. However, run Model 6 with the eccentric planet b to compute
+an upper bound on eccentricity.
 
-NOTE: currently, this doesn't work because of radvel version
-issues. If I need to run this again, just migrate the code to the
-current version of radvel.
+Here's what I found:
 
-### 4. Prepare data for photodynamical modeling
+```
+                  mean   std
+k1              11.369 1.829
+k2               0.774 1.717
+k3               0.194 1.237
+secosw1         -0.133 0.163
+sesinw1          0.144 0.224
+dvdt             0.016 0.007
+gp_amp           7.100 2.396
+gp_explength    35.149 4.645
+gp_per          20.339 0.315
+gp_perlength     0.470 0.065
+gamma_j         -2.265 2.167
+jit_j            4.535 1.376
+lnprobability -184.327 2.623
+```
+
+Which is within about 1.5 sigma of the photodynamical model and gives
+a 95\% upper limit of 0.27
+
+The final RV fit, which goes in the paper is measured through the 
+
+```
+ktwo19.keplerian.mcmc() method
+```
+
+### 5. Prepare data for photodynamical modeling
 
 ```
 run_ktwo19.py photdyn-prepare 
