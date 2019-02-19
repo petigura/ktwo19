@@ -19,6 +19,8 @@ import corner
 import matplotlib.pyplot as plt
 import ktwo19.plotting.phodymm
 plt.switch_backend('agg')
+from astropy import constants as c
+
 
 def read_phodymm(fname, demcmcfile, burnin):
     burnin //= 100
@@ -136,16 +138,71 @@ def read_phodymm_format(fname, demcmcfname, nburn):
         df['e'+i] = df['secosw'+i]**2 + df['sesinw'+i]**2
         df['ecosw'+i] = np.sqrt(df['e'+i]) * df['secosw'+i]
         df['esinw'+i] = np.sqrt(df['e'+i]) * df['sesinw'+i]
-        df['masse' + i] = df['mjup' + i] * 316 
-        df['omega'+i] = np.rad2deg(np.arctan2(df['esinw'+i],df['ecosw'+i]) )
+        df['masse' + i] = df['mjup' + i] * c.M_jup / c.M_earth
+        df['masss' + i] = df['masse' + i] * c.M_earth / c.M_sun
+        df['omega'+i] = np.arctan2(df['esinw'+i],df['ecosw'+i])
+        df['omegadeg'+i] = np.rad2deg(df['omega'+i])
 
+    # Rename stellar columns
     namemap = {'M$_s$':'mstar','R$_s$':'rstar','c$_1$':'c1','c$_2$':'c2','Chain#':'chain'}
     df = df.rename(columns=namemap)
     df = df.reset_index()
 
+    ghere = 2.9591220363e-4 # G # 2.9591220363e-4; Msun-AU-day units
     g = df.groupby('chain')
     niter = g.size()[0]
     nchain = len(g.size() )
     df['niter'] =  np.hstack([np.arange(niter)] * nchain)
+
+    msys = df['mstar'] # mass of star is first element in msys
+    for i in range(1,4):
+        msys = msys + df['masss%i' % i] # mass of body, and all internal bodies
+
+        # Kepler's third law
+        per = df['per%i' % i]
+        df['a%i' % i] = (ghere * msys * per**2.0 / 4.0 / np.pi**2)**(1.0/3.0)
+
+        # Check to make sure this is right.
+        df['tp%i' % i] = timetrans_to_timeperi(
+            df['tc%i' % i], df['per%i' % i], df['e%i' % i], df['omega%i' % i]
+        )
+
+        df['Omegarad%i' % i] = df.eval('Omega%i' % i) / 360 * 2 * np.pi
+        df['incrad%i' % i] = df.eval('inc%i' % i) / 360 * 2 * np.pi
+        df['prad%i' %i] = df.eval('rstar * ror%i' % i) * c.R_sun / c.R_earth
+
+    df['omegadiffdeg'] = df.eval('omegadeg3 - omegadeg2')
+
     return df
 
+
+def timetrans_to_timeperi(tc, per, ecc, omega):
+    """
+    Convert Time of Transit to Time of Periastron Passage
+    Args:
+        tc (float): time of conjunction
+        per (float): period [days]
+        ecc (float): eccentricity
+        omega (float): longitude of periastron (radians)
+    
+    Returns:
+        float: time of periastron passage
+    """
+    try:
+        if ecc >= 1:
+            return tc
+    except ValueError:
+        pass
+    
+    # true anomaly at time of conjunction 
+    f = np.pi/2 - omega
+
+    # eccentric anomaly at time of conjunction
+    ee = 2 * np.arctan(np.tan(f/2) * np.sqrt((1-ecc)/(1+ecc)))  
+
+    # mean anomaly at time of conjunction
+    ma = ee - ecc*np.sin(ee) 
+
+    # time of periastron
+    tp = tc - per/(2*np.pi) * ma
+    return tp

@@ -1,11 +1,24 @@
 from chainconsumer import ChainConsumer
 import ktwo19.phodymm
+import ktwo19.io
 from matplotlib.pylab import *
 
+    
+
+def key2tex(k):
+    d = {
+        'masse2':'$M_{p,b}\, (M_\oplus)$',
+        'masse3':'$M_{p,c}\, (M_\oplus)$',
+        'ecosw2':'$e_{b}\, \cos \omega_b$',
+        'ecosw3':'$e_{c}\, \cos \omega_c$',
+        'esinw2':'$e_{b}\, \sin \omega_b$',
+        'esinw3':'$e_{c}\, \sin \omega_c$',
+    }
+    return d[k]
 
 class Plotter(object):
     def __init__(self, fname, demcmcfname):
-        self.chain = ktwo19.phodymm.read_phodymm_format(fname, demcmcfname, 0)
+        self.chain = ktwo19.io.read_table('photodyn-samples',cache=1)
 
     def plot_corner_ecc(self):
         c = ChainConsumer()
@@ -19,48 +32,49 @@ class Plotter(object):
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
-        #setp([axL[0],axL[2]] ,xlim=(-0.3,0.3))
-        #setp([axL[2],axL[3]] ,ylim=(-0.3,0.3))
-        #fig.subplots_adjust(left=0.2,bottom=0.2)
+        setp(axL ,xlim=(-0.301,0.3),ylim=(-0.301,0.3))
         fig.set_tight_layout(True)
 
     def plot_corner_mass(self):
         c = ChainConsumer()
         chain = self.chain_without_burnin()
         cols = 'masse2 masse3'.split()
-        c.add_chain(np.array(chain[cols]),parameters=cols)
+        parameters = [key2tex(k) for k in cols]
+        c.add_chain(np.array(chain[cols]),parameters=parameters)
         c.configure(plot_hists=False)
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
-        #setp([axL[0],axL[2]] ,xlim=(0,40))
-        #setp([axL[2],axL[3]] ,ylim=(0,40))
+        setp(axL ,xlim=(0,40))
+        setp(axL,ylim=(0,40))
         fig.set_tight_layout(True)
 
     def plot_corner_ecosw(self):
         c = ChainConsumer()
         chain = self.chain_without_burnin()
         cols = 'ecosw2 ecosw3'.split()
-        c.add_chain(np.array(chain[cols]),parameters=cols)
+        parameters = [key2tex(k) for k in cols]
+        c.add_chain(np.array(chain[cols]),parameters=parameters)
         c.configure(plot_hists=False)
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
-        #setp([axL[0],axL[2]] ,xlim=(-0.4,0.4))
-        #setp([axL[2],axL[3]] ,ylim=(-0.4,0.4))
+        setp(axL, xlim=(-0.3,0.3))
+        setp(axL, ylim=(-0.3,0.3))
         fig.set_tight_layout(True)
 
     def plot_corner_esinw(self):
         c = ChainConsumer()
         chain = self.chain_without_burnin()
         cols = 'esinw2 esinw3'.split()
+        parameters = [key2tex(k) for k in cols]
         c.add_chain(np.array(chain[cols]),parameters=cols)
         c.configure(plot_hists=False)
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
-        #setp([axL[0],axL[2]] ,xlim=(-0.4,0.4))
-        #setp([axL[2],axL[3]] ,ylim=(-0.4,0.4))
+        setp(axL, xlim=(-0.3,0.3))
+        setp(axL, ylim=(-0.3,0.3))
         fig.set_tight_layout(True)
 
 

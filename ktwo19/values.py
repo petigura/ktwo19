@@ -93,11 +93,12 @@ def val_sys(return_dict=False):
     d[pre+'mpsini2_p95']  = "{:.1f}".format(chain['mpsini2'].quantile(0.95))
     d[pre+'mpsini3_p95']  = "{:.1f}".format(chain['mpsini3'].quantile(0.95))
 
-    chain = ktwo19.io.load_table('photodyn-samples',cache=1)
+    chain = ktwo19.io.load_table('photodyn-samples',cache=2)
     chain['delta'] = chain.eval('per3/per2 * (2/3) - 1')
     chain['masse3onmasse2'] = chain.eval('masse3/masse2')
     fmt = OrderedDict()
-    fmt['Mstar'] = "{:.1f}"
+    fmt['mstar'] = "{:.2f}"
+    fmt['rstar'] = "{:.2f}"
     fmt['masse1'] = "{:.1f}"
     fmt['masse2'] = "{:.0f}"
     fmt['masse3'] = "{:.1f}"
@@ -119,24 +120,21 @@ def val_sys(return_dict=False):
     fmt['Omega1'] = "{:.1f}"
     fmt['Omega2'] = "{:.1f}"
     fmt['Omega3'] = "{:.1f}"
-    fmt['wdeg1'] = "{:.0f}"
-    fmt['wdeg2'] = "{:.0f}"
-    fmt['wdeg3'] = "{:.0f}"
-    fmt['wdiffdeg'] = "{:.0f}"
+    fmt['omegadeg1'] = "{:.0f}"
+    fmt['omegadeg2'] = "{:.0f}"
+    fmt['omegadeg3'] = "{:.0f}"
+    fmt['omegadiffdeg'] = "{:.0f}"
     fmt['e1'] = "{:.2f}"
     fmt['e2'] = "{:.2f}"
     fmt['e3'] = "{:.2f}"
-    fmt['rrat1'] = "{:.4f}"
-    fmt['rrat2'] = "{:.4f}"
-    fmt['rrat3'] = "{:.4f}"
+    fmt['ror1'] = "{:.4f}"
+    fmt['ror2'] = "{:.4f}"
+    fmt['ror3'] = "{:.4f}"
     fmt['c1'] = "{:.1f}"
     fmt['c2'] = "{:.1f}"
-    fmt['dilution'] = "{:.1f}"
     fmt['prad1'] = "{:.2f}"
     fmt['prad2'] = "{:.1f}"
     fmt['prad3'] = "{:.1f}"
-    fmt['delta'] = "{:.5f}"
-    fmt['masse3onmasse2']  = "{:.2f}"
 
     insert_chain_dict(chain, d, fmt, pre='pd-') 
 

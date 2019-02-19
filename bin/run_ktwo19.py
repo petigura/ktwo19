@@ -72,8 +72,6 @@ def update_paper(args):
     w = Workflow()
     w.update_paper() 
 
-
-
 class Workflow(object):
     def __init__(self):
         # plots

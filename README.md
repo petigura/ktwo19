@@ -15,7 +15,12 @@ pip install celerite
 pip install ChainConsumer
 conda install matplotlib=2.0.2 
 pip install xlrd
+conda install pytables
 ```
+
+There was also an issue with the macosx backend, so I installed a
+matplotlibrc file and had it use tkagg
+
 
 Run in the ktwo19 conda environment on Erik's laptop
 

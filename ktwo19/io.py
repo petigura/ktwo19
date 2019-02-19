@@ -182,7 +182,12 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df = samp
 
     elif table=='photodyn-samples':
-        df = read_photodyn_samples()
+
+        fname = 'analysis/photodyn/runs/K2-19_e-uniform_Omega-vary/k2-19.in'
+        demcmcfname = 'analysis/photodyn/runs/K2-19_e-uniform_Omega-vary/demcmc_k2-19_massprior.out'
+        p = ktwo19.plotting.phodymm.Plotter(fname,demcmcfname)
+        p.nburn = 10000
+        df = p.chain_without_burnin()
 
     elif table=='fenv-samples':
         lopi = subsaturn.lopez.LopezInterpolator()
@@ -233,6 +238,9 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
 
     return df
 
+
+import ktwo19.plotting.phodymm
+
 def teq(teff, rstar, a):
     """
     teff : effective temperature (K)
@@ -246,104 +254,6 @@ def teq(teff, rstar, a):
 def per2a(per, mstar):
     a = (per**2 / 4 / np.pi**2 * c.G * mstar)**(1/3.)
     return a
-
-
-def read_photodyn_samples(fn):
-    ghere = 2.9591220363e-4 # G # 2.9591220363e-4; Msun-AU-day units
-    i = 0
-    iline = 0
-    f = open(fn,'r')
-    outL = []
-    while i < 30000:    
-#    while i < 3000:    # debugging
-#        if i==5040:
-#            import pdb;pdb.set_trace()
-        out = {}
-        while True:
-            line = f.readline()
-            iline += 1
-            print iline
-            if line[0:4]=='0.1\t':
-                pnum = 1
-                out = dict(out,**planet_line(line,pnum))
-                continue
-            elif line[0:4]=='0.2\t':
-                pnum = 2
-                out = dict(out,**planet_line(line,pnum))
-                continue
-            elif line[0:4]=='0.3\t':
-                pnum = 3
-                out = dict(out,**planet_line(line,pnum))
-                continue
-            elif line.count('Mstar')==1:
-                out['Mstar'] = line.split(' ')[0]
-                continue
-            elif line.count('Rstar')==1:
-                out['Rstar'] = line.split(' ')[0]
-                continue
-            elif line.count('c1')==1:
-                out['c1'] = line.split(' ')[0]
-                continue
-            elif line.count('c2')==1:
-                out['c2'] = line.split(' ')[0]
-                continue
-            elif line.count('dilution')==1:
-                out['dilution'] = line.split(' ')[0]
-                continue
-            elif line=='':
-                break
-            
-
-            break
-
-        if out=={}:
-            continue
-        outL.append(out)
-        i+=1
-        if (i % 10000)==0:
-            print i
-        
-
-    df = pd.DataFrame(outL)
-    df = df.astype(float)
-    msys = df['Mstar'] # mass of star is first element in msys
-
-    for i in range(1,4):
-        # Earth masses
-        df['masse%i' % i] = df['massj%i' % i] * c.M_jup / c.M_earth
-        df['masss%i' % i] = df['massj%i' % i] * c.M_jup / c.M_sun
-
-        msys = msys + df['masss%i' % i] # mass of body, and all internal bodies
-        # Eccentricity
-        df['e%i' % i] = df.eval('secosw%i**2 + sesinw%i**2' % (i,i))
-
-        # Argument of peri (rad)
-        df['w%i' % i] = df.eval('arctan2(sesinw%i,secosw%i)' % (i,i)) # radians 
-        # Argument of peri (deg)
-        df['wdeg%i' % i] = df['w%i' % i] / 2 / np.pi * 360
-
-        
-        df['ecosw%i' % i] = df.eval('e%i * cos(w%i)' % (i,i))
-        df['esinw%i' % i] = df.eval('e%i * sin(w%i)' % (i,i))
-        
-        # Kepler's third law
-        per = df['per%i' % i]
-        df['a%i' % i] = (ghere * msys * per**2.0 / 4.0 / pi**2)**(1.0/3.0)
-
-        # Check to make sure this is right.
-        df['tp%i' % i] = timetrans_to_timeperi(
-            df['tc%i' % i], df['per%i' % i], df['e%i' % i], df['w%i' % i]
-        )
-
-
-        df['Omegarad%i' % i] = df.eval('Omega%i' % i) / 360 * 2 * np.pi
-        df['incrad%i' % i] = df.eval('inc%i' % i) / 360 * 2 * np.pi
-        df['prad%i' %i] = df.eval('Rstar * rrat%i' % i) * c.R_sun / c.R_earth
-
-    df['wdiffdeg'] = df.eval('wdeg3 - wdeg2')
-
-    return df
-
 
 
 
@@ -360,36 +270,6 @@ def planet_line(line,pnum):
     d['rrat%i' % pnum] = line[8][:-2] # Radius ratio
     return d
 
-def timetrans_to_timeperi(tc, per, ecc, omega):
-    """
-    Convert Time of Transit to Time of Periastron Passage
-    Args:
-        tc (float): time of conjunction
-        per (float): period [days]
-        ecc (float): eccentricity
-        omega (float): longitude of periastron (radians)
-    
-    Returns:
-        float: time of periastron passage
-    """
-    try:
-        if ecc >= 1:
-            return tc
-    except ValueError:
-        pass
-    
-    # true anomaly at time of conjunction 
-    f = np.pi/2 - omega
-
-    # eccentric anomaly at time of conjunction
-    ee = 2 * np.arctan(np.tan(f/2) * np.sqrt((1-ecc)/(1+ecc)))  
-
-    # mean anomaly at time of conjunction
-    ma = ee - ecc*np.sin(ee) 
-
-    # time of periastron
-    tp = tc - per/(2*np.pi) * ma
-    return tp
     
 
 
