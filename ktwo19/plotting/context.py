@@ -40,8 +40,8 @@ def fig_massradius():
 
     errorbar(df2.pl_masse,df2.pl_rade,xerr=np.array(df2.pl_masseerr),yerr=np.array(df2.pl_radeerr),fmt='.',color='r')
     xlim(1,1000)
-    xlabel('Planet mass [Earth-Masses]')
-    ylabel('Planet size [Earth-Radii]')
+    xlabel('Planet mass (Earth-Masses)')
+    ylabel('Planet size (Earth-Radii)')
     ylim(1,30)
     #errorbar(float(d['pd-masse2']),float(d['pd-prad2']),yerr=float(d['pd-prad2_err1']),xerr=float(d['pd-masse2_err1']),fmt='.')
     #errorbar(float(d['pd-masse3']),float(d['pd-prad3']),yerr=float(d['pd-prad3_err1']),xerr=float(d['pd-masse3_err1']),fmt='.')

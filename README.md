@@ -18,6 +18,8 @@ pip install xlrd
 conda install pytables
 ```
 
+also needed to install rebound used ef325d3dd69445c25aeeb4a6b020ac18cde8ac4b
+
 There was also an issue with the macosx backend, so I installed a
 matplotlibrc file and had it use tkagg
 
@@ -126,3 +128,9 @@ Follow the instructions in `XX_Figure-Photodyn-Bestfit.ipynb`
 Follow the instructions here:
 
 XX_Figure_TTVFit.ipynb
+
+### 7 Run the N-body simulations
+
+run_ktwo19.py  create-nbody-batch | grep run > nbody.tot
+parallel :::: nbody.tot
+

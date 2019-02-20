@@ -13,6 +13,7 @@ import ktwo19.values
 import ktwo19.plotting.keplerian
 import ktwo19.plotting.phodymm
 import ktwo19.plotting.context
+import ktwo19.nbody
 
 def main():
     psr = ArgumentParser()
@@ -21,6 +22,13 @@ def main():
 
     psr2 = subpsr.add_parser('photodyn-prepare', parents=[psr_parent], )
     psr2.set_defaults(func=photdyn_prepare)
+
+    psr2 = subpsr.add_parser('nbody', parents=[psr_parent], )
+    psr2.add_argument('i',type=int)
+    psr2.set_defaults(func=nbody)
+
+    psr2 = subpsr.add_parser('create-nbody-batch', parents=[psr_parent], )
+    psr2.set_defaults(func=create_nbody_batch)
 
     psr2 = subpsr.add_parser('create-val', parents=[psr_parent], )
     psr2.add_argument('name',type=str)
@@ -55,6 +63,13 @@ def photdyn_prepare(args):
     fn = 'analysis/photodyn/rv-trend-removed.tsv'
     df.to_csv(fn,sep='\t',index=None)
     print "created {}".format(fn)
+
+def nbody(args):
+    ktwo19.nbody.run_simulation(args.i)
+
+def create_nbody_batch(args):
+    for i in range(100):
+        print "run_ktwo19.py nbody {}".format(i)
 
 def create_table(args):
     w = Workflow()

@@ -17,8 +17,8 @@ def key2tex(k):
     return d[k]
 
 class Plotter(object):
-    def __init__(self, fname, demcmcfname):
-        self.chain = ktwo19.io.read_table('photodyn-samples',cache=1)
+    def __init__(self):
+        self.chain = ktwo19.io.load_table('photodyn-samples',cache=1)
 
     def plot_corner_ecc(self):
         c = ChainConsumer()
@@ -45,8 +45,8 @@ class Plotter(object):
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
-        setp(axL ,xlim=(0,40))
-        setp(axL,ylim=(0,40))
+        setp(axL ,xlim=(-0.01,40))
+        setp(axL,ylim=(-0.01,40))
         fig.set_tight_layout(True)
 
     def plot_corner_ecosw(self):
@@ -59,8 +59,8 @@ class Plotter(object):
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
-        setp(axL, xlim=(-0.3,0.3))
-        setp(axL, ylim=(-0.3,0.3))
+        setp(axL, xlim=(-0.301,0.3))
+        setp(axL, ylim=(-0.301,0.3))
         fig.set_tight_layout(True)
 
     def plot_corner_esinw(self):
@@ -68,13 +68,13 @@ class Plotter(object):
         chain = self.chain_without_burnin()
         cols = 'esinw2 esinw3'.split()
         parameters = [key2tex(k) for k in cols]
-        c.add_chain(np.array(chain[cols]),parameters=cols)
+        c.add_chain(np.array(chain[cols]),parameters=parameters)
         c.configure(plot_hists=False)
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
-        setp(axL, xlim=(-0.3,0.3))
-        setp(axL, ylim=(-0.3,0.3))
+        setp(axL, xlim=(-0.301,0.3))
+        setp(axL, ylim=(-0.301,0.3))
         fig.set_tight_layout(True)
 
 
