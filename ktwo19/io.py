@@ -57,7 +57,7 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df.to_hdf(cachefn,table)
         return df
 
-    elif table=='stellar':
+   elif table=='stellar':
         fn = os.path.join(DATADIR, 'data.xlsx')
         df = pd.read_excel(fn,'stellar',squeeze=True,header=None,index_col=0,usecols=1)
 
@@ -182,10 +182,7 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df = samp
 
     elif table=='photodyn-samples':
-
-        fname = 'analysis/photodyn/runs/K2-19_e-uniform_Omega-vary/k2-19.in'
-        demcmcfname = 'analysis/photodyn/runs/K2-19_e-uniform_Omega-vary/demcmc_k2-19_massprior.out'
-        p = ktwo19.plotting.phodymm.Plotter(fname,demcmcfname)
+        p = ktwo19.plotting.phodymm.Plotter()
         p.nburn = 10000
         df = p.chain_without_burnin()
 

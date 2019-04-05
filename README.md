@@ -117,9 +117,21 @@ NOTE: the analysis did not model the RVs directly.
 
 ### 5 Run photodynamical code
 
-Follow the instructions in `XX_Figure-Photodyn-Bestfit.ipynb`
+Set up runs on cadence
 
-### 5 Create the photodymm-bestfit figure
+```
+/mir3/petigura/code/Phodymm/
+```
+
+Run the code (documentation needed) 
+
+edit `analysis/photodyn/runs.txt` with the run name
+
+```
+bin/pull_photdym.sh
+```
+
+### 5 Create the phodymm-bestfit figure
 
 Follow the instructions in `XX_Figure-Photodyn-Bestfit.ipynb`
 

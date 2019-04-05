@@ -2,19 +2,49 @@ from chainconsumer import ChainConsumer
 import ktwo19.phodymm
 import ktwo19.io
 from matplotlib.pylab import *
-
+import pandas as pd
+import matplotlib.gridspec as gridspec
     
 
 def key2tex(k):
     d = {
+        'per1':'$P_{p,d}$\, (days)',
+        'per2':'$P_{p,b}$\, (days)',
+        'per3':'$P_{p,c}$\, (days)',
+        'tc1':'$T_{c,d}$\, (days)',
+        'tc2':'$T_{c,b}$\, (days)',
+        'tc3':'$T_{c,c}$\, (days)',
+        'inc1':'$i_{d}$\, (deg)',
+        'inc2':'$i_{b}$\, (deg)',
+        'inc3':'$i_{c}$\, (deg)',
+        'Omega1':'$\Omega_{d}$\, (deg)',
+        'Omega2':'$\Omega_{b}$\, (deg)',
+        'Omega3':'$\Omega_{c}$\, (deg)',
+        'ror1':'$R_{p,d} / R_\star$',
+        'ror2':'$R_{p,b} / R_\star$',
+        'ror3':'$R_{p,c} / R_\star$',
+        'masse1':'$M_{p,d}\, (M_\oplus)$',
         'masse2':'$M_{p,b}\, (M_\oplus)$',
         'masse3':'$M_{p,c}\, (M_\oplus)$',
         'ecosw2':'$e_{b}\, \cos \omega_b$',
         'ecosw3':'$e_{c}\, \cos \omega_c$',
         'esinw2':'$e_{b}\, \sin \omega_b$',
         'esinw3':'$e_{c}\, \sin \omega_c$',
+
+        'secosw2':'$\sqrt{e_{b}}\, \cos \omega_b$',
+        'secosw3':'$\sqrt{e_{c}}\, \cos \omega_c$',
+        'sesinw2':'$\sqrt{e_{b}}\, \sin \omega_b$',
+        'sesinw3':'$\sqrt{e_{c}}\, \sin \omega_c$',
+        'rstar':'$R_\star$',
+        'mstar':'$M_\star$',
+        'c1':'$q_1$',
+        'c2':'$q_2$',
     }
-    return d[k]
+    try:
+        return d[k]
+    except KeyError:
+        return k
+        
 
 class Plotter(object):
     def __init__(self):
@@ -86,13 +116,14 @@ class Plotter(object):
         cols +='per3 tc3 secosw3 secosw3 inc2 Omega3 masse3 ror3 ' 
         cols +='rstar mstar c1 c2'
         cols = cols.split()
-        c.add_chain(np.array(chain[cols]),parameters=cols)
+
+        parameters = [key2tex(k) for k in cols]
+        c.add_chain(np.array(chain[cols]),parameters=parameters)
+
         c.configure(plot_hists=False)
         c.plotter.plot(figsize='GROW')
         fig = gcf()
         axL = fig.get_axes()
-        fig.set_tight_layout(True)
-
 
 
     def chain_without_burnin(self):
@@ -129,9 +160,7 @@ class Plotter(object):
         c.plotter.plot()
 
 def fig_corner(mode):
-    fname = 'analysis/photodyn/runs/K2-19_e-uniform_Omega-vary/k2-19.in'
-    demcmcfname = 'analysis/photodyn/runs/K2-19_e-uniform_Omega-vary/demcmc_k2-19_massprior.out'
-    p = ktwo19.plotting.phodymm.Plotter(fname,demcmcfname)
+    p = ktwo19.plotting.phodymm.Plotter()
     p.nburn = 10000
     if mode=='corner-ecc':
         p.plot_corner_ecc()
@@ -144,9 +173,6 @@ def fig_corner(mode):
     elif mode=='corner-all':
         p.plot_corner_all()
 
-import pandas as pd
-
-import matplotlib.gridspec as gridspec
 
 def fig_photodyn_bestfit():
     df = pd.read_csv('analysis/photodyn/runs/K2-19_e-uniform_Omega-vary_2/lc_k2-19_massprior.lcout')

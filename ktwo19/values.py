@@ -63,7 +63,7 @@ def val_sys(return_dict=False):
     d['rv-tc3'] = "{:.3f}".format(post.params['tc3'].value)
 
     chain = ktwo19.io.load_table('keplerian-samples-derived',cache=1,cachefn='load_table_cache-rv.hdf')
-
+    chain['dvdt'] *= 365
     fmt['k1'] = "{:.1f}"
     fmt['k2'] = "{:.1f}"
     fmt['k3'] = "{:.1f}"
