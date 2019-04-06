@@ -11,7 +11,7 @@ from matplotlib import pylab as plt
 
 def fig_rv():
     plt.rcParams['lines.markersize'] = 3
-    post = ktwo19.keplerian.maximum_a_posteriori()
+    post = ktwo19.keplerian.max_a_posteriori()
     plotter = orbit_plots.GPMultipanelPlot(
         post,subtract_orbit_model=False,nobin=True,
         phase_nrows=None, phase_ncols=3,
@@ -38,7 +38,6 @@ def fig_rv():
     plotter.plot_phasefold(99, 2)
     plt.sca(ax4)
     plotter.plot_phasefold(100, 3)
-
 
     plt.setp(axL[2:],ylabel='')
     _ = plt.setp(axL[1:],ylim=(-23,23),yticks=[-20,-15,-10,-5,0,5,10,15,20])

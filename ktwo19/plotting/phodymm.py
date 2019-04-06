@@ -58,7 +58,7 @@ class Plotter(object):
         c.add_chain(np.array(chain[cols]),parameters=parameters, name="K2-19b")
         cols = 'ecosw3 esinw3'.split()
         c.add_chain(np.array(chain[cols]),parameters=parameters, name="K2-19c")
-        c.configure(plot_hists=False)
+        c.configure(plot_hists=False,colors=['#4169e1','#ff6347'], shade=False)
         c.plotter.plot(figsize=(3,3))
         fig = gcf()
         axL = fig.get_axes()
@@ -112,8 +112,8 @@ class Plotter(object):
         c = ChainConsumer()
         chain = self.chain_without_burnin()
         cols = 'per1 tc1 inc1 masse1 ror1 '
-        cols +='per2 tc2 secosw2 secosw2 inc2 masse2 ror2 ' 
-        cols +='per3 tc3 secosw3 secosw3 inc2 Omega3 masse3 ror3 ' 
+        cols +='per2 tc2 secosw2 sesinw2 inc2 masse2 ror2 ' 
+        cols +='per3 tc3 secosw3 sesinw3 inc2 Omega3 masse3 ror3 ' 
         cols +='rstar mstar c1 c2'
         cols = cols.split()
 

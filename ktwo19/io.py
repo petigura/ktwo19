@@ -1,24 +1,24 @@
+import sys
 import os
 from cStringIO import StringIO as sio
 
 import numpy as np
-from scipy import optimize
 import pandas as pd
+from scipy import optimize
+import scipy.stats
 import cpsutils.io
-#import radvel.utils
-
-from .config import bjd0
-#import ktwo19.keplerian 
-#import ktwo19.photometry
 from astropy.time import Time
 from astropy import constants as c
 from astropy import units as u
 from matplotlib.pylab import *
-
-from scipy.stats import norm
-import sys
 sys.path.append('/Users/petigura/Research/subsaturn/')
-#import subsaturn.lopez
+import subsaturn.lopez
+
+import ktwo19.phodymm
+import ktwo19.keplerian 
+#import ktwo19.photometry
+#import radvel.utils
+from .config import bjd0
 
 DATADIR = os.path.join(os.path.dirname(__file__),'../data/')
 def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
@@ -39,13 +39,15 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
     """
     if cache==1:
         try:
-            df = pd.read_hdf(cachefn,table)
+            df = pd.read_hdf(cachefn,table, mode='a')
             print "read table {} from {}".format(table,cachefn)
             return df
+
         except IOError:
             print "Could not find cache file: %s" % cachefn
             print "Building cache..."
             cache=2
+    
         except KeyError:
             print "Cache not built for table: %s" % table
             print "Building cache..."
@@ -57,7 +59,7 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
         df.to_hdf(cachefn,table)
         return df
 
-   elif table=='stellar':
+    elif table=='stellar':
         fn = os.path.join(DATADIR, 'data.xlsx')
         df = pd.read_excel(fn,'stellar',squeeze=True,header=None,index_col=0,usecols=1)
 
@@ -178,13 +180,25 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
             df['rho'+si] = rho
 
             '''
-
         df = samp
 
     elif table=='photodyn-samples':
-        p = ktwo19.plotting.phodymm.Plotter()
-        p.nburn = 10000
-        df = p.chain_without_burnin()
+        basedir = 'analysis/photodyn/runs/'
+
+        # Use for purely photdynamical fit
+        '''
+        demcmcfname = 'K2-19_e-uniform_Omega-vary_no-RV/demcmc_k2-19_massprior.out'
+        fname = 'K2-19_e-uniform_Omega-vary_no-RV/k2-19.in'
+        '''
+
+
+        demcmcfname  = 'K2-19_e-uniform_Omega-vary/demcmc_k2-19_massprior.out'
+        fname = 'K2-19_e-uniform_Omega-vary/k2-19.in'
+
+        demcmcfname = os.path.join(basedir, demcmcfname)
+        fname = os.path.join(basedir, fname)
+        nburn = 10000 
+        df = ktwo19.phodymm.read_phodymm_format(fname, demcmcfname, nburn)
 
     elif table=='fenv-samples':
         lopi = subsaturn.lopez.LopezInterpolator()
@@ -192,11 +206,10 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
 
         stellar = load_table('stellar')
         nsamp = 1000
-        teff = norm.rvs(stellar.steff, stellar.steff_err,nsamp)
-        smass = norm.rvs(stellar.smass, stellar.smass_err,nsamp)
-        srad = norm.rvs(stellar.srad, stellar.srad_err,nsamp)
+        teff = scipy.stats.norm.rvs(stellar.steff, stellar.steff_err,nsamp)
+        smass = scipy.stats.norm.rvs(stellar.smass, stellar.smass_err,nsamp)
+        srad = scipy.stats.norm.rvs(stellar.srad, stellar.srad_err,nsamp)
         test = pd.DataFrame(index=range(nsamp))
-
 
         for i in [1,2,3]:
             pmass = df['masse%i' % i]
@@ -236,8 +249,6 @@ def load_table(table, cache=0, cachefn='load_table_cache.hdf', verbose=False):
     return df
 
 
-import ktwo19.plotting.phodymm
-
 def teq(teff, rstar, a):
     """
     teff : effective temperature (K)
@@ -252,8 +263,6 @@ def per2a(per, mstar):
     a = (per**2 / 4 / np.pi**2 * c.G * mstar)**(1/3.)
     return a
 
-
-
 def planet_line(line,pnum):
     line = line.split('\t')
     d = {}
@@ -266,9 +275,6 @@ def planet_line(line,pnum):
     d['massj%i' % pnum] = line[7] # Mass in jupiter units
     d['rrat%i' % pnum] = line[8][:-2] # Radius ratio
     return d
-
-    
-
 
 def load_ephem(method='linear'):
     fn = os.path.join(DATADIR, 'data.xlsx')

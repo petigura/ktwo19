@@ -136,6 +136,16 @@ def val_sys(return_dict=False):
     fmt['prad2'] = "{:.1f}"
     fmt['prad3'] = "{:.1f}"
 
+
+    chain['masseprec1'] = chain['masse1']
+    chain['masseprec2'] = chain['masse2']
+    chain['masseprec3'] = chain['masse3']
+
+    fmt['masseprec1'] = "{:.2f}"
+    fmt['masseprec2'] = "{:.1f}"
+    fmt['masseprec3'] = "{:.2f}"
+
+
     insert_chain_dict(chain, d, fmt, pre='pd-') 
 
     chain = ktwo19.io.load_table('fenv-samples',cache=1)
